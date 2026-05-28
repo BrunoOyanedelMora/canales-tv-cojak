@@ -3,8 +3,7 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Multiview Pro | 6 Canales Nacionales</title>
-    <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+    <title>Multiview Premium | 6 Canales Chilenos</title>
     <style>
         * {
             box-sizing: border-box;
@@ -20,7 +19,7 @@
             overflow: hidden;
         }
 
-        /* Contenedor en cuadrícula: 3 columnas iguales y 2 filas iguales */
+        /* Cuadrícula perfecta de 3 columnas y 2 filas */
         .grid-container {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
@@ -31,7 +30,7 @@
             padding: 6px;
         }
 
-        /* Caja contenedora de cada reproductor */
+        /* Contenedor de cada canal */
         .video-box {
             position: relative;
             width: 100%;
@@ -40,25 +39,22 @@
             border: 1px solid rgba(255, 255, 255, 0.05);
             border-radius: 8px;
             overflow: hidden;
-            display: flex;
-            justify-content: center;
-            align-items: center;
         }
 
-        video {
+        /* Forzamos a los reproductores incrustados a ocupar todo el espacio */
+        iframe {
             width: 100%;
             height: 100%;
-            object-fit: contain; /* Mantiene la proporción 16:9 de la televisión */
+            border: none;
             display: block;
-            background-color: #000;
         }
 
-        /* Etiqueta flotante elegante para identificar cada canal */
+        /* Etiqueta flotante para identificar el canal */
         .channel-label {
             position: absolute;
             top: 12px;
             left: 12px;
-            background: rgba(0, 0, 0, 0.8);
+            background: rgba(0, 0, 0, 0.83);
             color: #fff;
             padding: 5px 14px;
             font-size: 0.75rem;
@@ -76,16 +72,6 @@
         .video-box:hover .channel-label {
             opacity: 1;
         }
-
-        /* Mensaje técnico en caso de caída de un flujo */
-        .error-message {
-            position: absolute;
-            color: rgba(255, 255, 255, 0.4);
-            font-size: 0.8rem;
-            text-align: center;
-            display: none;
-            z-index: 2;
-        }
     </style>
 </head>
 <body>
@@ -94,105 +80,35 @@
         
         <div class="video-box">
             <div class="channel-label">TVN</div>
-            <div class="error-message" id="err-tvn">Cargando señal...</div>
-            <video id="video-tvn" controls autoplay muted playsinline></video>
+            <iframe src="https://alplox.github.io/json-teles/player.html?url=https://tvn-live.mediastream.am/live/tvn/smil:tvn.smil/playlist.m3u8" allow="autoplay; encrypted-media" allowfullscreen></iframe>
         </div>
 
         <div class="video-box">
             <div class="channel-label">T13</div>
-            <div class="error-message" id="err-t13">Cargando señal...</div>
-            <video id="video-t13" controls autoplay muted playsinline></video>
+            <iframe src="https://alplox.github.io/json-teles/player.html?url=https://tele13-live.mediastream.am/live/tele13/smil:tele13.smil/playlist.m3u8" allow="autoplay; encrypted-media" allowfullscreen></iframe>
         </div>
 
         <div class="video-box">
             <div class="channel-label">CHV</div>
-            <div class="error-message" id="err-chv">Cargando señal...</div>
-            <video id="video-chv" controls autoplay muted playsinline></video>
+            <iframe src="https://alplox.github.io/json-teles/player.html?url=https://chv-live.mediastream.am/live/chv/smil:chv.smil/playlist.m3u8" allow="autoplay; encrypted-media" allowfullscreen></iframe>
         </div>
 
         <div class="video-box">
             <div class="channel-label">MEGA</div>
-            <div class="error-message" id="err-mega">Cargando señal...</div>
-            <video id="video-mega" controls autoplay muted playsinline></video>
+            <iframe src="https://alplox.github.io/json-teles/player.html?url=https://mega-live.mediastream.am/live/mega/smil:mega.smil/playlist.m3u8" allow="autoplay; encrypted-media" allowfullscreen></iframe>
         </div>
 
         <div class="video-box">
             <div class="channel-label">CNN Chile</div>
-            <div class="error-message" id="err-cnn">Cargando señal...</div>
-            <video id="video-cnn" controls autoplay muted playsinline></video>
+            <iframe src="https://alplox.github.io/json-teles/player.html?url=https://cnnchile-live.mediastream.am/live/cnnchile/smil:cnnchile.smil/playlist.m3u8" allow="autoplay; encrypted-media" allowfullscreen></iframe>
         </div>
 
         <div class="video-box">
             <div class="channel-label">24 Horas</div>
-            <div class="error-message" id="err-24h">Cargando señal...</div>
-            <video id="video-24h" controls autoplay muted playsinline></video>
+            <iframe src="https://alplox.github.io/json-teles/player.html?url=https://24horas-live.mediastream.am/live/24horas/smil:24horas.smil/playlist.m3u8" allow="autoplay; encrypted-media" allowfullscreen></iframe>
         </div>
 
     </div>
 
-    <script>
-        // --- ENLACES EXTRAÍDOS DE TU ARCHIVO M3U CON COMPATIBILIDAD WEB ---
-        const channels = {
-            'tvn': {
-                url: 'https://tvn-live.mediastream.am/live/tvn/smil:tvn.smil/playlist.m3u8',
-                videoEl: 'video-tvn', errEl: 'err-tvn'
-            },
-            't13': {
-                url: 'https://tele13-live.mediastream.am/live/tele13/smil:tele13.smil/playlist.m3u8',
-                videoEl: 'video-t13', errEl: 'err-t13'
-            },
-            'chv': {
-                url: 'https://chv-live.mediastream.am/live/chv/smil:chv.smil/playlist.m3u8',
-                videoEl: 'video-chv', errEl: 'err-chv'
-            },
-            'mega': {
-                url: 'https://mega-live.mediastream.am/live/mega/smil:mega.smil/playlist.m3u8',
-                videoEl: 'video-mega', errEl: 'err-mega'
-            },
-            'cnn': {
-                url: 'https://cnnchile-live.mediastream.am/live/cnnchile/smil:cnnchile.smil/playlist.m3u8',
-                videoEl: 'video-cnn', errEl: 'err-cnn'
-            },
-            '24h': {
-                url: 'https://24horas-live.mediastream.am/live/24horas/smil:24horas.smil/playlist.m3u8',
-                videoEl: 'video-24h', errEl: 'err-24h'
-            }
-        };
-
-        function initPlayer(id, channel) {
-            const video = document.getElementById(channel.videoEl);
-            const errorMsg = document.getElementById(channel.errEl);
-
-            if (Hls.isSupported()) {
-                const hls = new Hls({
-                    maxMaxBufferLength: 8,
-                    lowLatencyMode: true,
-                    enableWorker: true
-                });
-                hls.loadSource(channel.url);
-                hls.attachMedia(video);
-                
-                hls.on(Hls.Events.ERROR, function (event, data) {
-                    if (data.fatal) {
-                        hls.startLoad(); // Reconexión automática 24/7 si el buffer o la red fallan
-                    }
-                });
-            } 
-            else if (video.canPlayType('application/vnd.apple.mpegurl')) {
-                // Soporte nativo para Safari en Mac e iOS
-                video.src = channel.url;
-            } else {
-                errorMsg.style.display = 'block';
-                errorMsg.textContent = 'Tu navegador no soporta IPTV HLS.';
-            }
-        }
-
-        // Lanzar los 6 flujos de video simultáneamente al cargar la página
-        window.addEventListener('DOMContentLoaded', () => {
-            Object.keys(channels).forEach(key => {
-                initPlayer(key, channels[key]);
-            });
-        });
-    </script>
 </body>
 </html>
