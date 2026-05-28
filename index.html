@@ -3,27 +3,51 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Multiview Premium | Canales Chilenos</title>
+    <title>Transmisiones en Vivo | Oficina Juventud Republicana</title>
     <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
     <style>
         body {
             margin: 0;
             padding: 10px;
             background-color: #111;
-            font-family: 'Brave Sans', Arial, sans-serif;
+            font-family: Arial, sans-serif;
             color: white;
             box-sizing: border-box;
             height: 100vh;
             display: flex;
             flex-direction: column;
+            overflow: hidden;
+        }
+
+        /* Barra Superior */
+        .header-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+            padding: 0 5px;
         }
         h2 {
-            margin: 0 0 10px 0;
+            margin: 0;
             font-size: 18px;
-            text-align: center;
-            color: #ff6600;
+            color: #fff;
         }
-        /* Cuadrícula estilo Multiview (3 columnas x 2 filas) */
+        .btn-header {
+            background-color: #222;
+            color: white;
+            border: 1px solid #444;
+            padding: 8px 14px;
+            cursor: pointer;
+            border-radius: 4px;
+            font-size: 14px;
+            font-weight: bold;
+            transition: background 0.2s;
+        }
+        .btn-header:hover {
+            background-color: #3d3d3d;
+        }
+
+        /* Contenedor Multiview */
         .grid-container {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
@@ -43,7 +67,7 @@
         .canal-header {
             background-color: #222;
             padding: 6px 12px;
-            font-size: 14px;
+            font-size: 13px;
             font-weight: bold;
             text-transform: uppercase;
             border-bottom: 1px solid #333;
@@ -51,10 +75,11 @@
             justify-content: space-between;
             align-items: center;
         }
-        .canal-tag {
-            background-color: #555;
-            padding: 2px 6px;
-            border-radius: 4px;
+        .canal-num {
+            background-color: #ff4444;
+            color: white;
+            padding: 1px 6px;
+            border-radius: 3px;
             font-size: 11px;
         }
         video {
@@ -63,79 +88,304 @@
             object-fit: cover;
             background: black;
         }
-        .error-msg {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            color: #888;
-            font-size: 14px;
+
+        /* Panel Lateral Desplegable (Más Canales) */
+        .sidebar {
+            position: fixed;
+            top: 0;
+            left: -320px;
+            width: 300px;
+            height: 100%;
+            background-color: #1a1a1a;
+            box-shadow: 2px 0 10px rgba(0,0,0,0.5);
+            transition: left 0.3s ease;
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+            padding: 10px;
+            box-sizing: border-box;
+        }
+        .sidebar.active {
+            left: 0;
+        }
+        .sidebar-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #333;
+            padding-bottom: 10px;
+            margin-bottom: 10px;
+        }
+        .close-sidebar {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 20px;
+            cursor: pointer;
+        }
+        .lista-canales-scroll {
+            overflow-y: auto;
+            flex-grow: 1;
+        }
+        .canal-item {
+            width: 100%;
+            padding: 10px;
+            background: #2b2b2b;
+            border: 1px solid #3a3a3a;
+            color: white;
+            text-align: left;
+            margin-bottom: 6px;
+            cursor: pointer;
+            border-radius: 4px;
+            font-size: 13px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .canal-item:hover {
+            background: #444;
+        }
+        .canal-item img {
+            width: 24px;
+            height: 24px;
+            object-fit: contain;
+            background: #fff;
+            border-radius: 3px;
+            padding: 1px;
+        }
+
+        /* Modal para elegir pantalla */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.8);
+            z-index: 2000;
+            justify-content: center;
+            align-items: center;
+        }
+        .modal-content {
+            background: #222;
+            padding: 20px;
+            border-radius: 8px;
             text-align: center;
+            max-width: 400px;
+            width: 90%;
+            border: 1px solid #444;
+        }
+        .modal-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin-top: 15px;
+        }
+        .btn-grid-select {
+            background: #333;
+            color: white;
+            border: 1px solid #555;
+            padding: 15px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            border-radius: 4px;
+        }
+        .btn-grid-select:hover {
+            background: #ff4444;
+            border-color: #ff4444;
         }
     </style>
 </head>
 <body>
 
-    <h2>Multiview Premium | 6 Canales en Vivo</h2>
+    <div class="header-bar">
+        <button class="btn-header" onclick="toggleSidebar()">☰ Más Canales</button>
+        <h2>Transmisiones en Vivo | Oficina Juventud Republicana</h2>
+        <button class="btn-header" onclick="toggleFullScreen()">⛶ Ampliar Pantalla</button>
+    </div>
 
-    <div class="grid-container">
-        <div class="canal-box">
-            <div class="canal-header"><span>TVN</span><span class="canal-tag">General</span></div>
-            <video id="video-tvn" controls autoplay muted playsinline></video>
+    <div class="grid-container" id="multiview-grid">
+        <div class="canal-box" data-slot="1">
+            <div class="canal-header"><span id="title-1">TVN</span><span class="canal-num">Pantalla 1</span></div>
+            <video id="video-1" controls autoplay muted playsinline></video>
         </div>
-        <div class="canal-box">
-            <div class="canal-header"><span>T13</span><span class="canal-tag">Noticias</span></div>
-            <video id="video-t13" controls autoplay muted playsinline></video>
+        <div class="canal-box" data-slot="2">
+            <div class="canal-header"><span id="title-2">T13</span><span class="canal-num">Pantalla 2</span></div>
+            <video id="video-2" controls autoplay muted playsinline></video>
         </div>
-        <div class="canal-box">
-            <div class="canal-header"><span>CHV</span><span class="canal-tag">General</span></div>
-            <video id="video-chv" controls autoplay muted playsinline></video>
+        <div class="canal-box" data-slot="3">
+            <div class="canal-header"><span id="title-3">CHV</span><span class="canal-num">Pantalla 3</span></div>
+            <video id="video-3" controls autoplay muted playsinline></video>
         </div>
-        <div class="canal-box">
-            <div class="canal-header"><span>MEGA</span><span class="canal-tag">General</span></div>
-            <video id="video-mega" controls autoplay muted playsinline></video>
+        <div class="canal-box" data-slot="4">
+            <div class="canal-header"><span id="title-4">MEGA</span><span class="canal-num">Pantalla 4</span></div>
+            <video id="video-4" controls autoplay muted playsinline></video>
         </div>
-        <div class="canal-box">
-            <div class="canal-header"><span>CNN CHILE</span><span class="canal-tag">Noticias</span></div>
-            <video id="video-cnn" controls autoplay muted playsinline></video>
+        <div class="canal-box" data-slot="5">
+            <div class="canal-header"><span id="title-5">CNN CHILE</span><span class="canal-num">Pantalla 5</span></div>
+            <video id="video-5" controls autoplay muted playsinline></video>
         </div>
-        <div class="canal-box">
-            <div class="canal-header"><span>24 HORAS</span><span class="canal-tag">Noticias</span></div>
-            <video id="video-24h" controls autoplay muted playsinline></video>
+        <div class="canal-box" data-slot="6">
+            <div class="canal-header"><span id="title-6">24 HORAS</span><span class="canal-num">Pantalla 6</span></div>
+            <video id="video-6" controls autoplay muted playsinline></video>
+        </div>
+    </div>
+
+    <div class="sidebar" id="sidebar-canales">
+        <div class="sidebar-header">
+            <h3>Catálogo de Canales</h3>
+            <button class="close-sidebar" onclick="toggleSidebar()">✕</button>
+        </div>
+        <div class="lista-canales-scroll" id="lista-m3u-items">
+            </div>
+    </div>
+
+    <div class="modal" id="modal-seleccion">
+        <div class="modal-content">
+            <h3 style="margin-top:0;">¿En qué pantalla quieres reemplazar el canal?</h3>
+            <p id="modal-canal-elegido" style="color:#aaa; font-size:14px;"></p>
+            <div class="modal-grid">
+                <button class="btn-grid-select" onclick="reemplazarEnSlot(1)">1</button>
+                <button class="btn-grid-select" onclick="reemplazarEnSlot(2)">2</button>
+                <button class="btn-grid-select" onclick="reemplazarEnSlot(3)">3</button>
+                <button class="btn-grid-select" onclick="reemplazarEnSlot(4)">4</button>
+                <button class="btn-grid-select" onclick="reemplazarEnSlot(5)">5</button>
+                <button class="btn-grid-select" onclick="reemplazarEnSlot(6)">6</button>
+            </div>
+            <button class="btn-header" style="margin-top:20px; width:100%;" onclick="cerrarModal()">Cancelar</button>
         </div>
     </div>
 
     <script>
-        // Mapeo manual directo usando los enlaces estables de tu lista M3U
-        const canalesStreaming = {
-            'video-tvn': 'https://mdstrm.com/live-stream-playlist-v/555c9a91eb4886825b07ee7b.m3u8',
-            'video-t13': 'https://redirector.rudo.video/hls-video/10b92cafdf3646cbc1e727f3dc76863621a327fd/t13/t13.smil/playlist.m3u8',
-            'video-chv': 'https://redirector.rudo.video/hls-video/10b92cafdf3646cbc1e727f3dc76863621a327fd/chv/chv.smil/playlist.m3u8',
-            'video-mega': 'https://unlimited1-cl-isp.dps.live/mega/mega.smil/playlist.m3u8',
-            'video-cnn': 'https://redirector.rudo.video/hls-video/lvcl5/cnn/cnn.smil/playlist.m3u8?DVR',
-            'video-24h': 'https://mdstrm.com/live-stream-playlist/689ba606ecfe7915e1f8f741.m3u8'
+        // Almacenamiento de instancias HLS activas para poder destruirlas al cambiar de canal
+        const hlsInstances = {};
+
+        // Configuración inicial por defecto de los 6 slots principales (CNN corregida a la opción 3)
+        const canalesIniciales = {
+            1: { nombre: 'TVN', url: 'https://mdstrm.com/live-stream-playlist-v/555c9a91eb4886825b07ee7b.m3u8' },
+            2: { nombre: 'T13', url: 'https://redirector.rudo.video/hls-video/10b92cafdf3646cbc1e727f3dc76863621a327fd/t13/t13.smil/playlist.m3u8' },
+            3: { nombre: 'CHV', url: 'https://redirector.rudo.video/hls-video/10b92cafdf3646cbc1e727f3dc76863621a327fd/chv/chv.smil/playlist.m3u8' },
+            4: { nombre: 'MEGA', url: 'https://unlimited1-cl-isp.dps.live/mega/mega.smil/playlist.m3u8' },
+            5: { nombre: 'CNN CHILE', url: 'https://jireh-4-hls-video-cl-isp.dps.live/hls-video/lvcl5/cnn/cnn.smil/playlist.m3u8' },
+            6: { nombre: '24 HORAS', url: 'https://mdstrm.com/live-stream-playlist/689ba606ecfe7915e1f8f741.m3u8' }
         };
 
-        // Función para inicializar el reproductor HLS en cada cuadro de video
-        function iniciarStreaming(idVideo, url) {
-            const video = document.getElementById(idVideo);
-            
+        let canalSeleccionadoTemporal = null;
+
+        // Función para inicializar o cambiar el streaming en un reproductor específico
+        function reproducirCanal(slotId, url, nombre) {
+            const video = document.getElementById(`video-${slotId}`);
+            document.getElementById(`title-${slotId}`).innerText = nombre;
+
+            // Si ya había una transmisión HLS previa en este cuadro, la cerramos limpiamente
+            if (hlsInstances[slotId]) {
+                hlsInstances[slotId].destroy();
+                delete hlsInstances[slotId];
+            }
+
             if (Hls.isSupported()) {
                 const hls = new Hls();
                 hls.loadSource(url);
                 hls.attachMedia(video);
-            } 
-            // Soporte nativo para navegadores basados en Apple (Safari / iOS)
-            else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+                hlsInstances[slotId] = hls;
+            } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
                 video.src = url;
             }
         }
 
-        // Ejecutar la carga simultánea al abrir la página
-        window.addEventListener('DOMContentLoaded', () => {
-            for (const id in canalesStreaming) {
-                iniciarStreaming(id, canalesStreaming[id]);
+        // Control del menú desplegable lateral
+        function toggleSidebar() {
+            document.getElementById('sidebar-canales').classList.toggle('active');
+        }
+
+        // Control de la pantalla completa del navegador
+        function toggleFullScreen() {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen().catch(err => {
+                    alert(`Error intentando ampliar pantalla: ${err.message}`);
+                });
+            } else {
+                document.exitFullscreen();
             }
+        }
+
+        // Lógica de lectura dinámica del archivo canales.m3u
+        async function cargarCatalogoM3U() {
+            try {
+                const respuesta = await fetch('canales.m3u');
+                const texto = await respuesta.text();
+                const lineas = texto.split('\n');
+                const contenedorLista = document.getElementById('lista-m3u-items');
+                contenedorLista.innerHTML = '';
+
+                let infoCanal = null;
+
+                lineas.forEach(linea => {
+                    linea = linea.trim();
+                    if (linea.startsWith('#EXTINF:')) {
+                        // Extraer el nombre descriptivo del canal
+                        const partesComa = linea.split(',');
+                        let nombre = partesComa[partesComa.length - 1].trim();
+                        
+                        // Intentar capturar el logo si existe en los metadatos
+                        let logoUrl = "";
+                        const matchLogo = linea.match(/tvg-logo="([^"]+)"/);
+                        if (matchLogo) logoUrl = matchLogo[1];
+
+                        infoCanal = { nombre: nombre, logo: logoUrl };
+                    } else if (linea.startsWith('http') && infoCanal) {
+                        const url = linea;
+                        const canalActual = { ...infoCanal, url: url };
+
+                        // Crear elemento visual en la barra lateral
+                        const boton = document.createElement('button');
+                        boton.className = 'canal-item';
+                        
+                        // Si tiene logo oficial se lo agregamos, si no usamos un marcador vacío
+                        const imgHtml = canalActual.logo ? `<img src="${canalActual.logo}" alt="logo">` : `<div style="width:24px; height:24px; background:#444; border-radius:3px;"></div>`;
+                        boton.innerHTML = `${imgHtml} <span>${canalActual.nombre}</span>`;
+
+                        boton.onclick = () => {
+                            abrirModalSeleccion(canalActual);
+                        };
+
+                        contenedorLista.appendChild(boton);
+                        infoCanal = null; // Reiniciar estructura
+                    }
+                });
+            } catch (e) {
+                document.getElementById('lista-m3u-items').innerText = "Error cargando archivo M3U.";
+            }
+        }
+
+        // Control de ventanas emergentes (Modal)
+        function abrirModalSeleccion(canal) {
+            canalSeleccionadoTemporal = canal;
+            document.getElementById('modal-canal-elegido').innerText = `Seleccionaste: ${canal.nombre}`;
+            document.getElementById('modal-seleccion').style.display = 'flex';
+        }
+
+        function cerrarModal() {
+            document.getElementById('modal-seleccion').style.display = 'none';
+            canalSeleccionadoTemporal = null;
+        }
+
+        // Realiza el cambio temporal en caliente dentro del espacio elegido
+        function reemplazarEnSlot(slotId) {
+            if (canalSeleccionadoTemporal) {
+                reproducirCanal(slotId, canalSeleccionadoTemporal.url, canalSeleccionadoTemporal.nombre);
+                cerrarModal();
+                toggleSidebar(); // Opcional: cierra la barra lateral para ver los cambios
+            }
+        }
+
+        // Arranque inicial automático
+        window.addEventListener('DOMContentLoaded', () => {
+            // Cargar la grilla base por defecto
+            for (const slot in canalesIniciales) {
+                reproducirCanal(slot, canalesIniciales[slot].url, canalesIniciales[slot].nombre);
+            }
+            // Generar el listado completo lateral desde tu m3u
+            cargarCatalogoM3U();
         });
     </script>
 </body>
