@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Multiview | Canales Nacionales</title>
+    <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+        
+        html, body {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            background-color: #0b0b0f;
+            font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+            overflow: hidden;
+        }
+
+        /* Contenedor principal: Divide la pantalla exactamente en 4 cuadrantes iguales */
+        .grid-container {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            grid-template-rows: repeat(2, 1fr);
+            width: 100vw;
+            height: 100vh;
+            gap: 4px; /* Pequeña separación elegante entre transmisiones */
+            padding: 4px;
+        }
+
+        /* Cada cuadrante de video */
+        .video-box {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            background-color: #000;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 6px;
+            overflow: hidden;
+        }
+
+        video {
+            width: 100%;
+            height: 100%;
+            object-fit: contain; /* Mantiene la proporción 16:9 original del canal */
+            display: block;
+        }
+
+        /* Etiqueta flotante con el nombre del canal */
+        .channel-label {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background: rgba(0, 0, 0, 0.75);
+            color: #fff;
+            padding: 4px 12px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            border-radius: 4px;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            pointer-events: none; /* No interfiere con los clics al reproductor */
+            z-index: 10;
+            opacity: 0.6;
+            transition: opacity 0.3s ease;
+        }
+
+        /* Al pasar el mouse por encima de un cuadrante, se ilumina la etiqueta */
+        .video-box:hover .channel-label {
+            opacity: 1;
+        }
+
+        /* Mensaje de error en caso de que la señal se caiga temporalmente */
+        .error-message {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: rgba(255, 255, 255, 0.4);
+            font-size: 0.85rem;
+            text-align: center;
+            display: none;
+            z-index: 2;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="grid-container">
+        
+        <div class="video-box">
+            <div class="channel-label">TVN</div>
+            <div class="error-message" id="err-tvn">Señal no disponible temporalmente</div>
+            <video id="video-tvn" controls autoplay muted playsinline></video>
+        </div>
+
+        <div class="video-box">
+            <div class="channel-label">MEGA</div>
+            <div class="error-message" id="err-mega">Señal no disponible temporalmente</div>
+            <video id="video-mega" controls autoplay muted playsinline></video>
+        </div>
+
+        <div class="video-box">
+            <div class="channel-label">T13</div>
+            <div class="error-message" id="err-t13">Señal no disponible temporalmente</div>
+            <video id="video-t13" controls autoplay muted playsinline></video>
+        </div>
+
+        <div class="video-box">
+            <div class="channel-label">CHV</div>
+            <div class="error-message" id="err-chv">Señal no disponible temporalmente</div>
+            <video id="video-chv" controls autoplay muted playsinline></video>
+        </div>
+
+    </div>
+
+    <script>
+        // --- SEÑALES IPTV (.m3u8) ACTUALIZADAS DE TELEVISIÓN ABIERTA CHILENA ---
+        const channels = {
+            'tvn': {
+                url: 'https://tvn-live.mediastream.am/live/tvn/smil:tvn.smil/playlist.m3u8',
+                videoEl: 'video-tvn',
+                errEl: 'err-tvn'
+            },
+            'mega': {
+                url: 'https://mega-live.mediastream.am/live/mega/smil:mega.smil/playlist.m3u8',
+                videoEl: 'video-mega',
+                errEl: 'err-mega'
+            },
+            't13': {
+                url: 'https://tele13-live.mediastream.am/live/tele13/smil:tele13.smil/playlist.m3u8',
+                videoEl: 'video-t13',
+                errEl: 'err-t13'
+            },
+            'chv': {
+                url: 'https://chv-live.mediastream.am/live/chv/smil:chv.smil/playlist.m3u8',
+                videoEl: 'video-chv',
+                errEl: 'err-chv'
+            }
+        };
+
+        // Función encargada de inicializar la transmisión en cada reproductor
+        function initPlayer(id, channel) {
+            const video = document.getElementById(channel.videoEl);
+            const errorMsg = document.getElementById(channel.errEl);
+
+            if (Hls.isSupported()) {
+                const hls = new Hls({
+                    maxMaxBufferLength: 10, // Optimiza el buffer para transmisiones 24/7 continuas
+                    enableWorker: true
+                });
+                hls.loadSource(channel.url);
+                hls.attachMedia(video);
+                
+                hls.on(Hls.Events.ERROR, function (event, data) {
+                    if (data.fatal) {
+                        console.warn(`Error en señal ${id}, intentando reconectar...`);
+                        hls.startLoad(); // Intenta reconectar de forma automática si expira el flujo
+                    }
+                });
+            } 
+            // Soporte nativo para navegadores que leen m3u8 directo sin librería (como Safari de Apple)
+            else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+                video.src = channel.url;
+            } else {
+                errorMsg.style.display = 'block';
+                errorMsg.textContent = 'Tu navegador no soporta reproducción HLS/IPTV.';
+            }
+        }
+
+        // Ejecutar la inicialización para los 4 canales al cargar la ventana
+        window.addEventListener('DOMContentLoaded', () => {
+            Object.keys(channels).forEach(key => {
+                initPlayer(key, channels[key]);
+            });
+        });
+    </script>
+</body>
+</html>
