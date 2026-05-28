@@ -3,15 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Transmisiones en Vivo | Oficina Juventud Republicana</title>
+    <title>Multiview Pro | Central de Operaciones Juventud</title>
     <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
     <style>
         :root {
-            --bg-main: #111;
-            --bg-card: #1e1e1e;
-            --bg-header: #2a2a2a;
+            --bg-main: #0c0f12;
+            --bg-card: #14191f;
+            --bg-header: #1b222b;
             --accent: #ff4444;
-            --border: #333;
+            --accent-green: #00e676;
+            --border: #242f3d;
+            --text-muted: #8b9bb0;
         }
 
         body {
@@ -21,9 +23,10 @@
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
             color: white;
             box-sizing: border-box;
-            min-height: 100vh;
+            height: 100vh;
             display: flex;
             flex-direction: column;
+            overflow: hidden; /* Evita scrolls globales molestos en Mac/4K */
         }
 
         /* Barra Superior Responsiva */
@@ -32,12 +35,11 @@
             justify-content: space-between;
             align-items: center;
             margin-bottom: 15px;
-            padding: 10px;
+            padding: 10px 20px;
             background: var(--bg-card);
             border-radius: 8px;
             border: 1px solid var(--border);
             gap: 15px;
-            flex-wrap: wrap;
         }
         .header-left, .header-right {
             display: flex;
@@ -47,25 +49,25 @@
         h2 {
             margin: 0;
             font-size: 18px;
+            font-weight: 700;
+            letter-spacing: 0.5px;
             color: #fff;
-            text-align: center;
-            flex: 1;
-            min-width: 250px;
+            text-transform: uppercase;
         }
         .btn-header {
             background-color: var(--bg-header);
             color: white;
-            border: 1px solid #444;
+            border: 1px solid var(--border);
             padding: 8px 16px;
             cursor: pointer;
             border-radius: 6px;
-            font-size: 14px;
+            font-size: 13px;
             font-weight: 600;
             transition: all 0.2s ease;
         }
         .btn-header:hover {
-            background-color: #3d3d3d;
-            border-color: #666;
+            background-color: #242f3d;
+            border-color: var(--text-muted);
         }
 
         /* Menú Selector de Cantidad */
@@ -75,16 +77,14 @@
             top: 110%;
             right: 0;
             background-color: var(--bg-card);
-            border: 1px solid #444;
+            border: 1px solid var(--border);
             border-radius: 6px;
             box-shadow: 0 8px 24px rgba(0,0,0,0.8);
             z-index: 1500;
             min-width: 180px;
             overflow: hidden;
         }
-        .dropdown-menu.show {
-            display: block;
-        }
+        .dropdown-menu.show { display: block; }
         .dropdown-item {
             width: 100%;
             padding: 12px 16px;
@@ -93,46 +93,42 @@
             color: white;
             text-align: left;
             cursor: pointer;
-            font-size: 14px;
+            font-size: 13px;
             transition: background 0.2s;
         }
-        .dropdown-item:hover {
-            background-color: var(--accent);
-        }
+        .dropdown-item:hover { background-color: var(--accent); }
 
-        /* Zona de Contenido Principal Adaptable */
+        /* Contenedor Principal Adaptable */
         .main-content-area {
             flex-grow: 1;
-            overflow-y: auto;
             display: flex;
             flex-direction: column;
             width: 100%;
-            max-width: 2560px; /* Soporte nativo óptimo para 2K/4K */
+            max-width: 2560px; /* Resolución nativa óptima para pantallas 2K/4K */
             margin: 0 auto;
+            min-height: 0;
         }
 
-        /* Contenedor Multiview Dinámico */
+        /* Grilla de Distribución Elástica */
         .grid-container {
             display: grid;
             gap: 15px;
             width: 100%;
+            height: 100%;
             box-sizing: border-box;
         }
         
-        /* Grillas Inteligentes basadas en Aspect-Ratio */
+        /* Modos dinámicos de Pantallas */
         .grid-1 { grid-template-columns: 1fr; }
         .grid-2 { grid-template-columns: repeat(2, 1fr); }
         .grid-3 { grid-template-columns: repeat(3, 1fr); }
-        .grid-4 { grid-template-columns: repeat(2, 1fr); }
-        .grid-5, .grid-6 { grid-template-columns: repeat(3, 1fr); }
+        .grid-4 { grid-template-columns: repeat(2, 1fr); grid-template-rows: repeat(2, 1fr); }
+        .grid-5, .grid-6 { grid-template-columns: repeat(3, 1fr); grid-template-rows: repeat(2, 1fr); }
 
-        @media (max-width: 900px) {
-            .grid-2, .grid-3, .grid-4, .grid-5, .grid-6 {
-                grid-template-columns: repeat(2, 1fr);
-            }
-        }
-        @media (max-width: 600px) {
-            .grid-container { grid-template-columns: 1fr !important; }
+        /* Comportamiento del Modo Último Minuto (Breaking News) */
+        .grid-container.breaking-active {
+            grid-template-columns: 1fr !important;
+            grid-template-rows: 1fr !important;
         }
 
         .canal-box {
@@ -142,15 +138,24 @@
             display: flex;
             flex-direction: column;
             overflow: hidden;
-            aspect-ratio: 16 / 9; /* Mantiene la proporción de TV perfecta siempre */
+            aspect-ratio: 16 / 9; /* Geometría de televisión perfecta */
             width: 100%;
+            transition: border-color 0.3s;
         }
-        .canal-box.hidden {
-            display: none !important;
+        .canal-box.hidden { display: none !important; }
+        
+        /* Ocultar las demás pantallas cuando una está en "Último Minuto" */
+        .canal-box.hidden-breaking { display: none !important; }
+        .canal-box.maximized-breaking {
+            border-color: var(--accent);
+            aspect-ratio: auto;
+            height: 100%;
         }
+
+        /* Encabezado del Slot y Controles */
         .canal-header {
             background-color: var(--bg-header);
-            padding: 8px 12px;
+            padding: 6px 12px;
             font-size: 13px;
             font-weight: bold;
             border-bottom: 1px solid var(--border);
@@ -158,12 +163,38 @@
             justify-content: space-between;
             align-items: center;
         }
-        .canal-num {
-            background-color: var(--accent);
+        .canal-controls {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .btn-slot-ctrl {
+            background: #242f3d;
+            border: 1px solid #344457;
             color: white;
-            padding: 2px 8px;
+            padding: 3px 8px;
             border-radius: 4px;
+            cursor: pointer;
             font-size: 11px;
+            font-weight: bold;
+            transition: all 0.2s;
+        }
+        .btn-slot-ctrl:hover { background: #344457; }
+        .btn-audio-toggle { font-size: 13px; padding: 2px 6px; }
+        .btn-breaking-toggle {
+            background: rgba(255, 68, 68, 0.15);
+            border-color: rgba(255, 68, 68, 0.4);
+            color: #ff6666;
+        }
+        .btn-breaking-toggle:hover { background: var(--accent); color: white; }
+        
+        .canal-num {
+            background-color: var(--border);
+            color: var(--text-muted);
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 10px;
+            text-transform: uppercase;
         }
         .video-wrapper {
             flex-grow: 1;
@@ -178,25 +209,24 @@
             display: block;
         }
 
-        /* Panel Lateral Desplegable Avanzado */
+        /* Menú Lateral Desplegable */
         .sidebar {
             position: fixed;
             top: 0;
             left: -350px;
             width: 330px;
             height: 100%;
-            background-color: #161616;
-            box-shadow: 4px 0 20px rgba(0,0,0,0.7);
+            background-color: #11161b;
+            box-shadow: 4px 0 20px rgba(0,0,0,0.8);
             transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             z-index: 2000;
             display: flex;
             flex-direction: column;
             padding: 15px;
             box-sizing: border-box;
+            border-right: 1px solid var(--border);
         }
-        .sidebar.active {
-            left: 0;
-        }
+        .sidebar.active { left: 0; }
         .sidebar-header {
             display: flex;
             justify-content: space-between;
@@ -208,25 +238,17 @@
         .close-sidebar {
             background: none;
             border: none;
-            color: #888;
+            color: var(--text-muted);
             font-size: 22px;
             cursor: pointer;
-            transition: color 0.2s;
         }
         .close-sidebar:hover { color: white; }
-        
-        .lista-canales-scroll {
-            overflow-y: auto;
-            flex-grow: 1;
-            padding-right: 5px;
-        }
+        .lista-canales-scroll { flex-grow: 1; overflow-y: auto; }
 
-        /* Estilos de Carpetas y Acordeones */
-        .categoria-container {
-            margin-bottom: 15px;
-        }
+        /* Estilos de Carpetas y Subcarpetas */
+        .categoria-container { margin-bottom: 12px; }
         .categoria-titulo {
-            background: #222;
+            background: var(--bg-card);
             color: #fff;
             width: 100%;
             text-align: left;
@@ -238,77 +260,49 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            font-size: 14px;
-            margin-bottom: 5px;
+            font-size: 13px;
         }
-        .categoria-titulo:hover { background: #2a2a2a; }
-        .categoria-contenido {
-            display: none;
-            padding-left: 8px;
-            border-left: 2px solid var(--accent);
-            margin-bottom: 10px;
-        }
+        .categoria-contenido { display: none; padding-left: 6px; border-left: 2px solid var(--accent); margin-top: 5px; }
         .categoria-contenido.open { display: block; }
 
-        /* Subcarpetas para transmisiones duplicadas */
-        .subcarpeta-container {
-            margin-bottom: 5px;
-        }
+        .subcarpeta-container { margin-bottom: 4px; }
         .subcarpeta-titulo {
-            background: #282828;
+            background: #1b222b;
             color: #ccc;
             width: 100%;
             text-align: left;
             padding: 8px 10px;
-            font-size: 13px;
-            border: 1px dashed #444;
+            font-size: 12px;
+            border: 1px dashed var(--border);
             border-radius: 4px;
             cursor: pointer;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 3px;
         }
-        .subcarpeta-titulo:hover { background: #333; color: white; }
-        .subcarpeta-contenido {
-            display: none;
-            padding-left: 10px;
-            background: #1c1c1c;
-            border-radius: 0 0 4px 4px;
-        }
+        .subcarpeta-contenido { display: none; padding-left: 8px; background: rgba(0,0,0,0.2); }
         .subcarpeta-contenido.open { display: block; }
 
-        /* Botón de canal final */
+        /* Ítems Finales de Canales */
         .canal-item {
             width: 100%;
             padding: 8px 10px;
-            background: #2b2b2b;
-            border: 1px solid #3a3a3a;
+            background: #14191f;
+            border: 1px solid var(--border);
             color: white;
             text-align: left;
-            margin-bottom: 4px;
+            margin-top: 3px;
             cursor: pointer;
             border-radius: 4px;
-            font-size: 13px;
+            font-size: 12px;
             display: flex;
             align-items: center;
             gap: 10px;
-            transition: background 0.2s;
         }
-        .canal-item:hover {
-            background: #444;
-            border-color: #555;
-        }
-        .canal-item img {
-            width: 22px;
-            height: 22px;
-            object-fit: contain;
-            background: #fff;
-            border-radius: 4px;
-            padding: 1px;
-        }
+        .canal-item:hover { background: #242f3d; }
+        .canal-item img { width: 20px; height: 20px; object-fit: contain; background: #fff; border-radius: 4px; }
 
-        /* Modal para elegir pantalla */
+        /* Modal de Asignación */
         .modal {
             display: none;
             position: fixed;
@@ -319,56 +313,40 @@
             align-items: center;
         }
         .modal-content {
-            background: #1f1f1f;
+            background: var(--bg-card);
             padding: 24px;
             border-radius: 12px;
             text-align: center;
-            max-width: 420px;
+            max-width: 400px;
             width: 90%;
-            border: 1px solid #444;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            border: 1px solid var(--border);
         }
-        .modal-grid {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 12px;
-            margin-top: 20px;
-        }
+        .modal-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 15px; }
         .btn-grid-select {
-            background: #2a2a2a;
+            background: var(--bg-header);
             color: white;
-            border: 1px solid #444;
-            padding: 18px;
-            font-size: 18px;
+            border: 1px solid var(--border);
+            padding: 15px;
+            font-size: 16px;
             font-weight: bold;
             cursor: pointer;
             border-radius: 6px;
-            transition: all 0.2s;
         }
-        .btn-grid-select:hover:not(:disabled) {
-            background: var(--accent);
-            border-color: var(--accent);
-            transform: scale(1.05);
-        }
-        .btn-grid-select:disabled {
-            background: #141414;
-            color: #444;
-            border-color: #222;
-            cursor: not-allowed;
-        }
+        .btn-grid-select:hover:not(:disabled) { background: var(--accent); border-color: var(--accent); }
+        .btn-grid-select:disabled { background: #0c0f12; color: #333; cursor: not-allowed; border-color: #111; }
     </style>
 </head>
 <body>
 
     <div class="header-bar">
         <div class="header-left">
-            <button class="btn-header" onclick="toggleSidebar()">☰ Más Canales</button>
+            <button class="btn-header" onclick="toggleSidebar()">☰ Catálogo de Canales</button>
         </div>
         
-        <h2>Transmisiones en Vivo | Oficina Juventud Republicana</h2>
+        <h2>Central Multiview • Juventud Republicana</h2>
         
         <div class="header-right">
-            <button class="btn-header" onclick="toggleDropdown(event)">🔢 Cantidad de transmisiones ▾</button>
+            <button class="btn-header" onclick="toggleDropdown(event)">🔢 Distribución de Pantallas ▾</button>
             <div class="dropdown-menu" id="dropdown-cantidad">
                 <button class="dropdown-item" onclick="cambiarCantidadPantallas(1)">1 Pantalla</button>
                 <button class="dropdown-item" onclick="cambiarCantidadPantallas(2)">2 Pantallas</button>
@@ -377,34 +355,76 @@
                 <button class="dropdown-item" onclick="cambiarCantidadPantallas(5)">5 Pantallas</button>
                 <button class="dropdown-item" onclick="cambiarCantidadPantallas(6)">6 Pantallas</button>
             </div>
-            <button class="btn-header" onclick="toggleFullScreen()">⛶ Ampliar Pantalla</button>
+            <button class="btn-header" onclick="toggleFullScreen()">⛶ Pantalla Completa</button>
         </div>
     </div>
 
     <div class="main-content-area">
         <div class="grid-container grid-6" id="multiview-grid">
             <div class="canal-box" id="slot-1" data-slot="1">
-                <div class="canal-header"><span id="title-1">TVN</span><span class="canal-num">Pantalla 1</span></div>
+                <div class="canal-header">
+                    <span id="title-1">Cargando...</span>
+                    <div class="canal-controls">
+                        <button class="btn-slot-ctrl btn-audio-toggle" id="mute-1" onclick="toggleMuteSlot(1)">🔇</button>
+                        <button class="btn-slot-ctrl btn-breaking-toggle" id="breaking-1" onclick="toggleBreakingNews(1)">🚨 Último Minuto</button>
+                        <span class="canal-num">P1</span>
+                    </div>
+                </div>
                 <div class="video-wrapper"><video id="video-1" controls autoplay muted playsinline></video></div>
             </div>
             <div class="canal-box" id="slot-2" data-slot="2">
-                <div class="canal-header"><span id="title-2">T13</span><span class="canal-num">Pantalla 2</span></div>
+                <div class="canal-header">
+                    <span id="title-2">Cargando...</span>
+                    <div class="canal-controls">
+                        <button class="btn-slot-ctrl btn-audio-toggle" id="mute-2" onclick="toggleMuteSlot(2)">🔇</button>
+                        <button class="btn-slot-ctrl btn-breaking-toggle" id="breaking-2" onclick="toggleBreakingNews(2)">🚨 Último Minuto</button>
+                        <span class="canal-num">P2</span>
+                    </div>
+                </div>
                 <div class="video-wrapper"><video id="video-2" controls autoplay muted playsinline></video></div>
             </div>
             <div class="canal-box" id="slot-3" data-slot="3">
-                <div class="canal-header"><span id="title-3">CHV</span><span class="canal-num">Pantalla 3</span></div>
+                <div class="canal-header">
+                    <span id="title-3">Cargando...</span>
+                    <div class="canal-controls">
+                        <button class="btn-slot-ctrl btn-audio-toggle" id="mute-3" onclick="toggleMuteSlot(3)">🔇</button>
+                        <button class="btn-slot-ctrl btn-breaking-toggle" id="breaking-3" onclick="toggleBreakingNews(3)">🚨 Último Minuto</button>
+                        <span class="canal-num">P3</span>
+                    </div>
+                </div>
                 <div class="video-wrapper"><video id="video-3" controls autoplay muted playsinline></video></div>
             </div>
             <div class="canal-box" id="slot-4" data-slot="4">
-                <div class="canal-header"><span id="title-4">MEGA</span><span class="canal-num">Pantalla 4</span></div>
+                <div class="canal-header">
+                    <span id="title-4">Cargando...</span>
+                    <div class="canal-controls">
+                        <button class="btn-slot-ctrl btn-audio-toggle" id="mute-4" onclick="toggleMuteSlot(4)">🔇</button>
+                        <button class="btn-slot-ctrl btn-breaking-toggle" id="breaking-4" onclick="toggleBreakingNews(4)">🚨 Último Minuto</button>
+                        <span class="canal-num">P4</span>
+                    </div>
+                </div>
                 <div class="video-wrapper"><video id="video-4" controls autoplay muted playsinline></video></div>
             </div>
             <div class="canal-box" id="slot-5" data-slot="5">
-                <div class="canal-header"><span id="title-5">CNN CHILE</span><span class="canal-num">Pantalla 5</span></div>
+                <div class="canal-header">
+                    <span id="title-5">Cargando...</span>
+                    <div class="canal-controls">
+                        <button class="btn-slot-ctrl btn-audio-toggle" id="mute-5" onclick="toggleMuteSlot(5)">🔇</button>
+                        <button class="btn-slot-ctrl btn-breaking-toggle" id="breaking-5" onclick="toggleBreakingNews(5)">🚨 Último Minuto</button>
+                        <span class="canal-num">P5</span>
+                    </div>
+                </div>
                 <div class="video-wrapper"><video id="video-5" controls autoplay muted playsinline></video></div>
             </div>
             <div class="canal-box" id="slot-6" data-slot="6">
-                <div class="canal-header"><span id="title-6">24 HORAS</span><span class="canal-num">Pantalla 6</span></div>
+                <div class="canal-header">
+                    <span id="title-6">Cargando...</span>
+                    <div class="canal-controls">
+                        <button class="btn-slot-ctrl btn-audio-toggle" id="mute-6" onclick="toggleMuteSlot(6)">🔇</button>
+                        <button class="btn-slot-ctrl btn-breaking-toggle" id="breaking-6" onclick="toggleBreakingNews(6)">🚨 Último Minuto</button>
+                        <span class="canal-num">P6</span>
+                    </div>
+                </div>
                 <div class="video-wrapper"><video id="video-6" controls autoplay muted playsinline></video></div>
             </div>
         </div>
@@ -412,16 +432,15 @@
 
     <div class="sidebar" id="sidebar-canales">
         <div class="sidebar-header">
-            <h3 style="margin:0; font-size: 16px;">Catálogo de Canales</h3>
+            <h3 style="margin:0; font-size: 15px; text-transform:uppercase;">Catálogo de Señales</h3>
             <button class="close-sidebar" onclick="toggleSidebar()">✕</button>
         </div>
-        <div class="lista-canales-scroll" id="lista-m3u-items">
-            </div>
+        <div class="lista-canales-scroll" id="lista-m3u-items"></div>
     </div>
 
     <div class="modal" id="modal-seleccion">
         <div class="modal-content">
-            <h3 style="margin-top:0; font-size:16px;">¿En qué pantalla deseas cargar este canal?</h3>
+            <h3 style="margin-top:0; font-size:15px;">¿En qué pantalla deseas cargar el canal?</h3>
             <p id="modal-canal-elegido" style="color:var(--accent); font-weight:bold; font-size:14px;"></p>
             <div class="modal-grid">
                 <button class="btn-grid-select" id="btn-select-1" onclick="reemplazarEnSlot(1)">1</button>
@@ -439,15 +458,12 @@
         const hlsInstances = {};
         let pantallasVisiblesActuales = 6;
         let canalSeleccionadoTemporal = null;
+        let canalesIniciales = {};
 
-        const canalesIniciales = {
-            1: { nombre: 'TVN', url: 'https://mdstrm.com/live-stream-playlist-v/555c9a91eb4886825b07ee7b.m3u8' },
-            2: { nombre: 'T13', url: 'https://redirector.rudo.video/hls-video/10b92cafdf3646cbc1e727f3dc76863621a327fd/t13/t13.smil/playlist.m3u8' },
-            3: { nombre: 'CHV', url: 'https://redirector.rudo.video/hls-video/10b92cafdf3646cbc1e727f3dc76863621a327fd/chv/chv.smil/playlist.m3u8' },
-            4: { nombre: 'MEGA', url: 'https://unlimited1-cl-isp.dps.live/mega/mega.smil/playlist.m3u8' },
-            5: { nombre: 'CNN CHILE', url: 'https://jireh-4-hls-video-cl-isp.dps.live/hls-video/lvcl5/cnn/cnn.smil/playlist.m3u8' },
-            6: { nombre: '24 HORAS', url: 'https://mdstrm.com/live-stream-playlist/689ba606ecfe7915e1f8f741.m3u8' }
-        };
+        // Variables de Control para Modo Último Minuto
+        let breakingNewsActivo = false;
+        let breakingSlotId = null;
+        let estadosMutePrevios = {};
 
         function reproducirCanal(slotId, url, nombre) {
             const video = document.getElementById(`video-${slotId}`);
@@ -471,7 +487,81 @@
             }
         }
 
+        // --- MEJORA 1: CONTROL DE AUDIO INDIVIDUAL ---
+        function toggleMuteSlot(slotId) {
+            const video = document.getElementById(`video-${slotId}`);
+            const btn = document.getElementById(`mute-${slotId}`);
+            video.muted = !video.muted;
+            btn.innerText = video.muted ? "🔇" : "🔊";
+            btn.style.background = video.muted ? "" : "var(--accent-green)";
+            btn.style.borderColor = video.muted ? "" : "var(--accent-green)";
+        }
+
+        // --- MEJORA 2: MODO ÚLTIMO MINUTO (BREAKING NEWS COYUNTURAL) ---
+        function toggleBreakingNews(slotId) {
+            const grid = document.getElementById('multiview-grid');
+            
+            if (!breakingNewsActivo) {
+                breakingNewsActivo = true;
+                breakingSlotId = slotId;
+                grid.classList.add('breaking-active');
+
+                for (let i = 1; i <= 6; i++) {
+                    const box = document.getElementById(`slot-${i}`);
+                    const video = document.getElementById(`video-${i}`);
+                    const btnMute = document.getElementById(`mute-${i}`);
+                    
+                    estadosMutePrevios[i] = video.muted;
+
+                    if (i !== slotId) {
+                        box.classList.add('hidden-breaking');
+                        video.muted = true;
+                        btnMute.innerText = "🔇";
+                        btnMute.style.background = "";
+                    } else {
+                        box.classList.add('maximized-breaking');
+                        video.muted = false; // Forzar audio al canal de la noticia
+                        btnMute.innerText = "🔊";
+                        btnMute.style.background = "var(--accent-green)";
+                        document.getElementById(`breaking-${i}`).innerText = "🟢 Restaurar Grilla";
+                        document.getElementById(`breaking-${i}`).style.background = "var(--accent-green)";
+                        document.getElementById(`breaking-${i}`).style.color = "#000";
+                    }
+                }
+            } else {
+                breakingNewsActivo = false;
+                grid.classList.remove('breaking-active');
+
+                for (let i = 1; i <= 6; i++) {
+                    const box = document.getElementById(`slot-${i}`);
+                    const video = document.getElementById(`video-${i}`);
+                    const btnMute = document.getElementById(`mute-${i}`);
+
+                    box.classList.remove('hidden-breaking', 'maximized-breaking');
+                    
+                    // Devolver visibilidad según la cantidad configurada de pantallas
+                    if (i <= pantallasVisiblesActuales) {
+                        box.classList.remove('hidden');
+                    } else {
+                        box.classList.add('hidden');
+                    }
+
+                    // Restaurar audio previo
+                    video.muted = estadosMutePrevios[i] !== undefined ? estadosMutePrevios[i] : true;
+                    btnMute.innerText = video.muted ? "🔇" : "🔊";
+                    btnMute.style.background = video.muted ? "" : "var(--accent-green)";
+                    
+                    document.getElementById(`breaking-${i}`).innerText = "🚨 Último Minuto";
+                    document.getElementById(`breaking-${i}`).style.background = "";
+                    document.getElementById(`breaking-${i}`).style.color = "";
+                }
+                breakingSlotId = null;
+            }
+        }
+
         function cambiarCantidadPantallas(cantidad) {
+            if (breakingNewsActivo) return; // Bloquear cambio si está en curso un último minuto
+            
             pantallasVisiblesActuales = cantidad;
             const grid = document.getElementById('multiview-grid');
             
@@ -482,7 +572,7 @@
                 const box = document.getElementById(`slot-${i}`);
                 if (i <= cantidad) {
                     box.classList.remove('hidden');
-                    if (!hlsInstances[i]) {
+                    if (!hlsInstances[i] && canalesIniciales[i]) {
                         reproducirCanal(i, canalesIniciales[i].url, canalesIniciales[i].nombre);
                     }
                 } else {
@@ -495,37 +585,47 @@
             }
         }
 
-        function toggleDropdown(e) {
-            e.stopPropagation();
-            document.getElementById('dropdown-cantidad').classList.toggle('show');
-        }
-
-        window.addEventListener('click', () => {
-            document.getElementById('dropdown-cantidad').classList.remove('show');
-        });
-
-        function toggleSidebar() {
-            document.getElementById('sidebar-canales').classList.toggle('active');
-        }
-
-        function toggleFullScreen() {
-            if (!document.fullscreenElement) {
-                document.documentElement.requestFullscreen().catch(err => {
-                    alert(`Error: ${err.message}`);
-                });
-            } else {
-                document.exitFullscreen();
+        // --- RECEPTOR AUTOMÁTICO DE TU APP DE ESCRITORIO (GITHUB ONLY) ---
+        async function verificarSenalesRemotas() {
+            if (breakingNewsActivo) return; // Pausar sincronización si estás transmitiendo una emergencia
+            try {
+                const respuesta = await fetch(`live-config.json?t=${Date.now()}`);
+                if (!respuesta.ok) return;
+                
+                const datosNuevos = await respuesta.json();
+                
+                for (let i = 1; i <= 6; i++) {
+                    if (datosNuevos[i]) {
+                        const streamNuevo = datosNuevos[i];
+                        if (!canalesIniciales[i] || canalesIniciales[i].url !== streamNuevo.url) {
+                            canalesIniciales[i] = streamNuevo;
+                            if (i <= pantallasVisiblesActuales) {
+                                reproducirCanal(i, streamNuevo.url, streamNuevo.nombre);
+                            }
+                        }
+                    }
+                }
+            } catch (e) {
+                console.log("Esperando inicialización remota...");
             }
         }
 
-        // Lector M3U Avanzado: Clasifica por Categorías y colapsa transmisiones del mismo canal
+        // Escucha cambios del panel de tu Mac cada 20 segundos
+        setInterval(verificarSenalesRemotas, 20000);
+
+        function toggleDropdown(e) { e.stopPropagation(); document.getElementById('dropdown-cantidad').classList.toggle('show'); }
+        window.addEventListener('click', () => { document.getElementById('dropdown-cantidad').classList.remove('show'); });
+        function toggleSidebar() { document.getElementById('sidebar-canales').classList.toggle('active'); }
+        function toggleFullScreen() {
+            if (!document.fullscreenElement) { document.documentElement.requestFullscreen(); } else { document.exitFullscreen(); }
+        }
+
+        // Lector M3U Avanzado por Carpetas Dobles
         async function cargarCatalogoCategorizadoM3U() {
             try {
                 const respuesta = await fetch('canales.m3u');
                 const texto = await respuesta.text();
                 const lineas = texto.split('\n');
-                
-                // Estructura de datos: { "Categoría": { "Nombre Base Canal": [ { canalObj }, { canalObj } ] } }
                 const mapaCategorias = {};
                 let infoTemporal = null;
 
@@ -534,13 +634,10 @@
                     if (linea.startsWith('#EXTINF:')) {
                         const partesComa = linea.split(',');
                         let nombreCompleto = partesComa[partesComa.length - 1].trim();
-                        
-                        // Extraer grupo original
                         let grupoOriginal = "Otros Canales";
                         const matchGrupo = linea.match(/group-title="([^"]+)"/);
                         if (matchGrupo) grupoOriginal = matchGrupo[1].toLowerCase();
 
-                        // Normalizar categorías grandes solicitadas
                         let categoriaFinal = "Otros Canales";
                         if (grupoOriginal.includes('general') || nombreCompleto.includes('TVN') || nombreCompleto.includes('Canal 13') || nombreCompleto.includes('Chilevisión') || nombreCompleto.includes('Mega')) {
                             categoriaFinal = "Canales Nacionales";
@@ -548,62 +645,43 @@
                             categoriaFinal = "Noticias";
                         } else if (grupoOriginal.includes('music') || grupoOriginal.includes('radio')) {
                             categoriaFinal = "Radios / Música";
-                        } else if (grupoOriginal.includes('culture') || grupoOriginal.includes('entertainment') || grupoOriginal.includes('kids')) {
+                        } else if (grupoOriginal.includes('culture') || grupoOriginal.includes('entertainment')) {
                             categoriaFinal = "Cultura y Entretenimiento";
                         } else if (grupoOriginal.includes('sports') || grupoOriginal.includes('deportes')) {
                             categoriaFinal = "Deportes";
                         }
 
-                        // Capturar logo
                         let logoUrl = "";
                         const matchLogo = linea.match(/tvg-logo="([^"]+)"/);
                         if (matchLogo) logoUrl = matchLogo[1];
 
-                        // Obtener nombre base limpio de números de transmisión como (1), (2) o [CL]
                         let nombreBase = nombreCompleto.replace(/\s\(\d+\)/g, '').replace(/\[.*\]/g, '').trim();
 
-                        infoTemporal = { 
-                            nombreCompleto: nombreCompleto, 
-                            nombreBase: nombreBase, 
-                            categoria: categoriaFinal, 
-                            logo: logoUrl 
-                        };
+                        infoTemporal = { nombreCompleto, nombreBase, categoria: categoriaFinal, logo: logoUrl };
                     } else if (linea.startsWith('http') && infoTemporal) {
                         infoTemporal.url = linea;
-                        
-                        // Inicializar estructuras en el mapa
                         if (!mapaCategorias[infoTemporal.categoria]) mapaCategorias[infoTemporal.categoria] = {};
-                        if (!mapaCategorias[infoTemporal.categoria][infoTemporal.nombreBase]) {
-                            mapaCategorias[infoTemporal.categoria][infoTemporal.nombreBase] = [];
-                        }
-                        
+                        if (!mapaCategorias[infoTemporal.categoria][infoTemporal.nombreBase]) mapaCategorias[infoTemporal.categoria][infoTemporal.nombreBase] = [];
                         mapaCategorias[infoTemporal.categoria][infoTemporal.nombreBase].push(infoTemporal);
                         infoTemporal = null;
                     }
                 });
-
                 renderizarCarpetas(mapaCategorias);
-
             } catch (e) {
-                document.getElementById('lista-m3u-items').innerText = "Error procesando el archivo de canales.";
+                document.getElementById('lista-m3u-items').innerText = "Error cargando catálogo M3U.";
             }
         }
 
-        // Dibuja las carpetas principales y subcarpetas en el HTML
         function renderizarCarpetas(mapa) {
             const contenedor = document.getElementById('lista-m3u-items');
             contenedor.innerHTML = '';
-
-            // Forzar un orden limpio de carpetas grandes
             const ordenCategorias = ["Canales Nacionales", "Noticias", "Radios / Música", "Cultura y Entretenimiento", "Deportes", "Otros Canales"];
 
             ordenCategorias.forEach(cat => {
                 if (!mapa[cat]) return;
 
-                // Crear Carpeta Principal de la Categoría
                 const catDiv = document.createElement('div');
                 catDiv.className = 'categoria-container';
-
                 const btnCat = document.createElement('button');
                 btnCat.className = 'categoria-titulo';
                 btnCat.innerHTML = `<span>📁 ${cat}</span> <span>▾</span>`;
@@ -616,19 +694,14 @@
                     btnCat.querySelector('span:last-child').innerText = contenidoCat.classList.contains('open') ? '▴' : '▾';
                 };
 
-                // Iterar los canales bases dentro de esta categoría
                 for (const nombreBase in mapa[cat]) {
                     const transmisiones = mapa[cat][nombreBase];
-
                     if (transmisiones.length > 1) {
-                        // Caso A: Hay múltiples fuentes para el mismo canal -> Crear Subcarpeta
                         const subDiv = document.createElement('div');
                         subDiv.className = 'subcarpeta-container';
-
                         const btnSub = document.createElement('button');
                         btnSub.className = 'subcarpeta-titulo';
                         btnSub.innerHTML = `<span>📂 ${nombreBase} (${transmisiones.length})</span> <span>▾</span>`;
-
                         const contenidoSub = document.createElement('div');
                         contenidoSub.className = 'subcarpeta-contenido';
 
@@ -637,19 +710,14 @@
                             btnSub.querySelector('span:last-child').innerText = contenidoSub.classList.contains('open') ? '▴' : '▾';
                         };
 
-                        transmisiones.forEach(t => {
-                            contenidoSub.appendChild(crearBotonCanalFinal(t));
-                        });
-
+                        transmisiones.forEach(t => contenidoSub.appendChild(crearBotonCanalFinal(t)));
                         subDiv.appendChild(btnSub);
                         subDiv.appendChild(contenidoSub);
                         contenidoCat.appendChild(subDiv);
                     } else {
-                        // Caso B: Canal único -> Dibujar botón directo sin subcarpeta
                         contenidoCat.appendChild(crearBotonCanalFinal(transmisiones[0]));
                     }
                 }
-
                 catDiv.appendChild(btnCat);
                 catDiv.appendChild(contenidoCat);
                 contenedor.appendChild(catDiv);
@@ -659,7 +727,7 @@
         function crearBotonCanalFinal(canal) {
             const boton = document.createElement('button');
             boton.className = 'canal-item';
-            const imgHtml = canal.logo ? `<img src="${canal.logo}" onerror="this.style.display='none'">` : `<div style="width:22px; height:22px; background:#444; border-radius:4px;"></div>`;
+            const imgHtml = canal.logo ? `<img src="${canal.logo}" onerror="this.style.display='none'">` : `<div style="width:20px; height:20px; background:#444; border-radius:4px;"></div>`;
             boton.innerHTML = `${imgHtml} <span>${canal.nombreCompleto}</span>`;
             boton.onclick = () => abrirModalSeleccion(canal);
             return boton;
@@ -668,18 +736,13 @@
         function abrirModalSeleccion(canal) {
             canalSeleccionadoTemporal = canal;
             document.getElementById('modal-canal-elegido').innerText = canal.nombreCompleto;
-            
             for (let i = 1; i <= 6; i++) {
-                const btnSlot = document.getElementById(`btn-select-${i}`);
-                btnSlot.disabled = (i > pantallasVisiblesActuales);
+                document.getElementById(`btn-select-${i}`).disabled = (i > pantallasVisiblesActuales);
             }
             document.getElementById('modal-seleccion').style.display = 'flex';
         }
 
-        function cerrarModal() {
-            document.getElementById('modal-seleccion').style.display = 'none';
-            canalSeleccionadoTemporal = null;
-        }
+        function cerrarModal() { document.getElementById('modal-seleccion').style.display = 'none'; canalSeleccionadoTemporal = null; }
 
         function reemplazarEnSlot(slotId) {
             if (canalSeleccionadoTemporal) {
@@ -689,11 +752,22 @@
             }
         }
 
-        window.addEventListener('DOMContentLoaded', () => {
+        window.addEventListener('DOMContentLoaded', async () => {
+            await verificarSenalesRemotas();
+            // Respaldo por si no hay configuración en la nube aún
+            if (Object.keys(canalesIniciales).length === 0) {
+                canalesIniciales = {
+                    1: { nombre: 'TVN', url: 'https://mdstrm.com/live-stream-playlist-v/555c9a91eb4886825b07ee7b.m3u8' },
+                    2: { nombre: 'T13', url: 'https://redirector.rudo.video/hls-video/10b92cafdf3646cbc1e727f3dc76863621a327fd/t13/t13.smil/playlist.m3u8' },
+                    3: { text: 'CHV', url: 'https://redirector.rudo.video/hls-video/10b92cafdf3646cbc1e727f3dc76863621a327fd/chv/chv.smil/playlist.m3u8' },
+                    4: { nombre: 'MEGA', url: 'https://unlimited1-cl-isp.dps.live/mega/mega.smil/playlist.m3u8' },
+                    5: { nombre: 'CNN CHILE', url: 'https://jireh-4-hls-video-cl-isp.dps.live/hls-video/lvcl5/cnn/cnn.smil/playlist.m3u8' },
+                    6: { nombre: '24 HORAS', url: 'https://mdstrm.com/live-stream-playlist/689ba606ecfe7915e1f8f741.m3u8' }
+                };
+            }
             for (const slot in canalesIniciales) {
                 reproducirCanal(slot, canalesIniciales[slot].url, canalesIniciales[slot].nombre);
             }
-            // Ejecutar el nuevo categorizador inteligente
             cargarCatalogoCategorizadoM3U();
         });
     </script>
