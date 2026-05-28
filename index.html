@@ -26,11 +26,23 @@
             align-items: center;
             margin-bottom: 10px;
             padding: 0 5px;
+            gap: 10px;
+        }
+        .header-left {
+            display: flex;
+            gap: 10px;
+        }
+        .header-right {
+            display: flex;
+            gap: 10px;
+            position: relative;
         }
         h2 {
             margin: 0;
             font-size: 18px;
             color: #fff;
+            flex-grow: 1;
+            text-align: center;
         }
         .btn-header {
             background-color: #222;
@@ -42,19 +54,59 @@
             font-size: 14px;
             font-weight: bold;
             transition: background 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 5px;
         }
         .btn-header:hover {
             background-color: #3d3d3d;
         }
 
-        /* Contenedor Multiview */
+        /* Menú Desplegable de Cantidad */
+        .dropdown-menu {
+            display: none;
+            position: absolute;
+            top: 110%;
+            right: 0;
+            background-color: #222;
+            border: 1px solid #444;
+            border-radius: 4px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.7);
+            z-index: 1500;
+            min-width: 160px;
+        }
+        .dropdown-menu.show {
+            display: block;
+        }
+        .dropdown-item {
+            width: 100%;
+            padding: 10px 15px;
+            background: none;
+            border: none;
+            color: white;
+            text-align: left;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        .dropdown-item:hover {
+            background-color: #ff4444;
+        }
+
+        /* Contenedor Multiview Dinámico */
         .grid-container {
             display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            grid-template-rows: repeat(2, 1fr);
             gap: 12px;
             flex-grow: 1;
+            transition: all 0.3s ease;
         }
+        
+        /* Reglas dinámicas aplicadas por JavaScript según la cantidad */
+        .grid-1 { grid-template-columns: 1fr; grid-template-rows: 1fr; }
+        .grid-2 { grid-template-columns: repeat(2, 1fr); grid-template-rows: 1fr; }
+        .grid-3 { grid-template-columns: repeat(3, 1fr); grid-template-rows: 1fr; }
+        .grid-4 { grid-template-columns: repeat(2, 1fr); grid-template-rows: repeat(2, 1fr); }
+        .grid-5, .grid-6 { grid-template-columns: repeat(3, 1fr); grid-template-rows: repeat(2, 1fr); }
+
         .canal-box {
             background-color: #000;
             border: 2px solid #333;
@@ -63,6 +115,9 @@
             overflow: hidden;
             display: flex;
             flex-direction: column;
+        }
+        .canal-box.hidden {
+            display: none !important;
         }
         .canal-header {
             background-color: #222;
@@ -193,38 +248,59 @@
             background: #ff4444;
             border-color: #ff4444;
         }
+        .btn-grid-select:disabled {
+            background: #151515;
+            color: #444;
+            border-color: #222;
+            cursor: not-allowed;
+        }
     </style>
 </head>
 <body>
 
     <div class="header-bar">
-        <button class="btn-header" onclick="toggleSidebar()">☰ Más Canales</button>
+        <div class="header-left">
+            <button class="btn-header" onclick="toggleSidebar()">☰ Más Canales</button>
+        </div>
+        
         <h2>Transmisiones en Vivo | Oficina Juventud Republicana</h2>
-        <button class="btn-header" onclick="toggleFullScreen()">⛶ Ampliar Pantalla</button>
+        
+        <div class="header-right">
+            <button class="btn-header" onclick="toggleDropdown()">🔢 Cantidad de transmisiones ▾</button>
+            <div class="dropdown-menu" id="dropdown-cantidad">
+                <button class="dropdown-item" onclick="cambiarCantidadPantallas(1)">1 Pantalla</button>
+                <button class="dropdown-item" onclick="cambiarCantidadPantallas(2)">2 Pantallas</button>
+                <button class="dropdown-item" onclick="cambiarCantidadPantallas(3)">3 Pantallas</button>
+                <button class="dropdown-item" onclick="cambiarCantidadPantallas(4)">4 Pantallas</button>
+                <button class="dropdown-item" onclick="cambiarCantidadPantallas(5)">5 Pantallas</button>
+                <button class="dropdown-item" onclick="cambiarCantidadPantallas(6)">6 Pantallas</button>
+            </div>
+            <button class="btn-header" onclick="toggleFullScreen()">⛶ Ampliar Pantalla</button>
+        </div>
     </div>
 
-    <div class="grid-container" id="multiview-grid">
-        <div class="canal-box" data-slot="1">
+    <div class="grid-container grid-6" id="multiview-grid">
+        <div class="canal-box" id="slot-1" data-slot="1">
             <div class="canal-header"><span id="title-1">TVN</span><span class="canal-num">Pantalla 1</span></div>
             <video id="video-1" controls autoplay muted playsinline></video>
         </div>
-        <div class="canal-box" data-slot="2">
+        <div class="canal-box" id="slot-2" data-slot="2">
             <div class="canal-header"><span id="title-2">T13</span><span class="canal-num">Pantalla 2</span></div>
             <video id="video-2" controls autoplay muted playsinline></video>
         </div>
-        <div class="canal-box" data-slot="3">
+        <div class="canal-box" id="slot-3" data-slot="3">
             <div class="canal-header"><span id="title-3">CHV</span><span class="canal-num">Pantalla 3</span></div>
             <video id="video-3" controls autoplay muted playsinline></video>
         </div>
-        <div class="canal-box" data-slot="4">
+        <div class="canal-box" id="slot-4" data-slot="4">
             <div class="canal-header"><span id="title-4">MEGA</span><span class="canal-num">Pantalla 4</span></div>
             <video id="video-4" controls autoplay muted playsinline></video>
         </div>
-        <div class="canal-box" data-slot="5">
+        <div class="canal-box" id="slot-5" data-slot="5">
             <div class="canal-header"><span id="title-5">CNN CHILE</span><span class="canal-num">Pantalla 5</span></div>
             <video id="video-5" controls autoplay muted playsinline></video>
         </div>
-        <div class="canal-box" data-slot="6">
+        <div class="canal-box" id="slot-6" data-slot="6">
             <div class="canal-header"><span id="title-6">24 HORAS</span><span class="canal-num">Pantalla 6</span></div>
             <video id="video-6" controls autoplay muted playsinline></video>
         </div>
@@ -243,23 +319,22 @@
         <div class="modal-content">
             <h3 style="margin-top:0;">¿En qué pantalla quieres reemplazar el canal?</h3>
             <p id="modal-canal-elegido" style="color:#aaa; font-size:14px;"></p>
-            <div class="modal-grid">
-                <button class="btn-grid-select" onclick="reemplazarEnSlot(1)">1</button>
-                <button class="btn-grid-select" onclick="reemplazarEnSlot(2)">2</button>
-                <button class="btn-grid-select" onclick="reemplazarEnSlot(3)">3</button>
-                <button class="btn-grid-select" onclick="reemplazarEnSlot(4)">4</button>
-                <button class="btn-grid-select" onclick="reemplazarEnSlot(5)">5</button>
-                <button class="btn-grid-select" onclick="reemplazarEnSlot(6)">6</button>
+            <div class="modal-grid" id="modal-botones-grid">
+                <button class="btn-grid-select" id="btn-select-1" onclick="reemplazarEnSlot(1)">1</button>
+                <button class="btn-grid-select" id="btn-select-2" onclick="reemplazarEnSlot(2)">2</button>
+                <button class="btn-grid-select" id="btn-select-3" onclick="reemplazarEnSlot(3)">3</button>
+                <button class="btn-grid-select" id="btn-select-4" onclick="reemplazarEnSlot(4)">4</button>
+                <button class="btn-grid-select" id="btn-select-5" onclick="reemplazarEnSlot(5)">5</button>
+                <button class="btn-grid-select" id="btn-select-6" onclick="reemplazarEnSlot(6)">6</button>
             </div>
             <button class="btn-header" style="margin-top:20px; width:100%;" onclick="cerrarModal()">Cancelar</button>
         </div>
     </div>
 
     <script>
-        // Almacenamiento de instancias HLS activas para poder destruirlas al cambiar de canal
         const hlsInstances = {};
+        let pantallasVisiblesActuales = 6;
 
-        // Configuración inicial por defecto de los 6 slots principales (CNN corregida a la opción 3)
         const canalesIniciales = {
             1: { nombre: 'TVN', url: 'https://mdstrm.com/live-stream-playlist-v/555c9a91eb4886825b07ee7b.m3u8' },
             2: { nombre: 'T13', url: 'https://redirector.rudo.video/hls-video/10b92cafdf3646cbc1e727f3dc76863621a327fd/t13/t13.smil/playlist.m3u8' },
@@ -271,16 +346,17 @@
 
         let canalSeleccionadoTemporal = null;
 
-        // Función para inicializar o cambiar el streaming en un reproductor específico
         function reproducirCanal(slotId, url, nombre) {
             const video = document.getElementById(`video-${slotId}`);
-            document.getElementById(`title-${slotId}`).innerText = nombre;
+            const titleEl = document.getElementById(`title-${slotId}`);
+            if (titleEl) titleEl.innerText = nombre;
 
-            // Si ya había una transmisión HLS previa en este cuadro, la cerramos limpiamente
             if (hlsInstances[slotId]) {
                 hlsInstances[slotId].destroy();
                 delete hlsInstances[slotId];
             }
+
+            if (!url) return; // Si es un slot oculto intencionalmente no cargamos nada
 
             if (Hls.isSupported()) {
                 const hls = new Hls();
@@ -292,23 +368,67 @@
             }
         }
 
-        // Control del menú desplegable lateral
+        // Lógica para redimensionar y acomodar la cuadrícula
+        function cambiarCantidadPantallas(cantidad) {
+            pantallasVisiblesActuales = cantidad;
+            const grid = document.getElementById('multiview-grid');
+            
+            // 1. Remover clases previas de estructura de grilla
+            grid.className = 'grid-container';
+            // 2. Asignar la nueva clase de distribución simétrica
+            grid.classList.add(`grid-${cantidad}`);
+
+            // 3. Mostrar u ocultar los contenedores de video correspondientes
+            for (let i = 1; i <= 6; i++) {
+                const box = document.getElementById(`slot-${i}`);
+                if (i <= cantidad) {
+                    box.classList.remove('hidden');
+                    // Si se vuelve a activar un cuadro y no tiene streaming cargado, le devolvemos su señal base
+                    if (!hlsInstances[i]) {
+                        reproducirCanal(i, canalesIniciales[i].url, canalesIniciales[i].nombre);
+                    }
+                } else {
+                    box.classList.add('hidden');
+                    // Pausamos y destruimos la instancia del canal oculto para ahorrar internet y procesamiento
+                    if (hlsInstances[i]) {
+                        hlsInstances[i].destroy();
+                        delete hlsInstances[i];
+                    }
+                }
+            }
+            cerrarDropdown();
+        }
+
+        // Control del menú de cantidad
+        function toggleDropdown() {
+            document.getElementById('dropdown-cantidad').classList.toggle('show');
+        }
+
+        function cerrarDropdown() {
+            document.getElementById('dropdown-cantidad').classList.remove('show');
+        }
+
+        // Cerrar menús al hacer click afuera
+        window.addEventListener('click', function(e) {
+            if (!e.target.matches('.btn-header')) {
+                cerrarDropdown();
+            }
+        });
+
         function toggleSidebar() {
             document.getElementById('sidebar-canales').classList.toggle('active');
         }
 
-        // Control de la pantalla completa del navegador
         function toggleFullScreen() {
             if (!document.fullscreenElement) {
                 document.documentElement.requestFullscreen().catch(err => {
-                    alert(`Error intentando ampliar pantalla: ${err.message}`);
+                    alert(`Error: ${err.message}`);
                 });
             } else {
                 document.exitFullscreen();
             }
         }
 
-        // Lógica de lectura dinámica del archivo canales.m3u
         async function cargarCatalogoM3U() {
             try {
                 const respuesta = await fetch('canales.m3u');
@@ -322,11 +442,9 @@
                 lineas.forEach(linea => {
                     linea = linea.trim();
                     if (linea.startsWith('#EXTINF:')) {
-                        // Extraer el nombre descriptivo del canal
                         const partesComa = linea.split(',');
                         let nombre = partesComa[partesComa.length - 1].trim();
                         
-                        // Intentar capturar el logo si existe en los metadatos
                         let logoUrl = "";
                         const matchLogo = linea.match(/tvg-logo="([^"]+)"/);
                         if (matchLogo) logoUrl = matchLogo[1];
@@ -336,11 +454,9 @@
                         const url = linea;
                         const canalActual = { ...infoCanal, url: url };
 
-                        // Crear elemento visual en la barra lateral
                         const boton = document.createElement('button');
                         boton.className = 'canal-item';
                         
-                        // Si tiene logo oficial se lo agregamos, si no usamos un marcador vacío
                         const imgHtml = canalActual.logo ? `<img src="${canalActual.logo}" alt="logo">` : `<div style="width:24px; height:24px; background:#444; border-radius:3px;"></div>`;
                         boton.innerHTML = `${imgHtml} <span>${canalActual.nombre}</span>`;
 
@@ -349,7 +465,7 @@
                         };
 
                         contenedorLista.appendChild(boton);
-                        infoCanal = null; // Reiniciar estructura
+                        infoCanal = null;
                     }
                 });
             } catch (e) {
@@ -357,10 +473,21 @@
             }
         }
 
-        // Control de ventanas emergentes (Modal)
         function abrirModalSeleccion(canal) {
             canalSeleccionadoTemporal = canal;
             document.getElementById('modal-canal-elegido').innerText = `Seleccionaste: ${canal.nombre}`;
+            
+            // Deshabilitar botones de pantallas que actualmente están ocultas por el usuario
+            for (let i = 1; i <= 6; i++) {
+                const btn = document.getElementById(`btn-select-1`);
+                const botonSlot = document.getElementById(`btn-select-${i}`);
+                if (i <= pantallasVisiblesActuales) {
+                    botonSlot.disabled = false;
+                } else {
+                    botonSlot.disabled = true;
+                }
+            }
+
             document.getElementById('modal-seleccion').style.display = 'flex';
         }
 
@@ -369,22 +496,18 @@
             canalSeleccionadoTemporal = null;
         }
 
-        // Realiza el cambio temporal en caliente dentro del espacio elegido
         function reemplazarEnSlot(slotId) {
             if (canalSeleccionadoTemporal) {
                 reproducirCanal(slotId, canalSeleccionadoTemporal.url, canalSeleccionadoTemporal.nombre);
                 cerrarModal();
-                toggleSidebar(); // Opcional: cierra la barra lateral para ver los cambios
+                toggleSidebar();
             }
         }
 
-        // Arranque inicial automático
         window.addEventListener('DOMContentLoaded', () => {
-            // Cargar la grilla base por defecto
             for (const slot in canalesIniciales) {
                 reproducirCanal(slot, canalesIniciales[slot].url, canalesIniciales[slot].nombre);
             }
-            // Generar el listado completo lateral desde tu m3u
             cargarCatalogoM3U();
         });
     </script>
