@@ -3,123 +3,140 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mi TV en GitHub Pages</title>
-    <link href="https://vjs.zencdn.net/8.10.0/video-js.css" rel="stylesheet" />
+    <title>Multiview Premium | Canales Chilenos</title>
+    <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
     <style>
         body {
-            font-family: Arial, sans-serif;
-            background-color: #111;
-            color: white;
             margin: 0;
-            display: flex;
-            height: 100vh;
-        }
-        #lista-canales {
-            width: 300px;
-            background-color: #222;
-            overflow-y: auto;
-            border-right: 2px solid #333;
             padding: 10px;
-        }
-        .canal-btn {
-            display: block;
-            width: 100%;
-            padding: 12px;
-            background: #333;
+            background-color: #111;
+            font-family: 'Brave Sans', Arial, sans-serif;
             color: white;
-            border: none;
-            margin-bottom: 8px;
-            text-align: left;
-            cursor: pointer;
-            border-radius: 4px;
-            font-size: 16px;
-        }
-        .canal-btn:hover {
-            background: #555;
-        }
-        #contenedor-reproductor {
-            flex-grow: 1;
+            box-sizing: border-box;
+            height: 100vh;
             display: flex;
-            justify-content: center;
+            flex-direction: column;
+        }
+        h2 {
+            margin: 0 0 10px 0;
+            font-size: 18px;
+            text-align: center;
+            color: #ff6600;
+        }
+        /* Cuadrícula estilo Multiview (3 columnas x 2 filas) */
+        .grid-container {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            grid-template-rows: repeat(2, 1fr);
+            gap: 12px;
+            flex-grow: 1;
+        }
+        .canal-box {
+            background-color: #000;
+            border: 2px solid #333;
+            border-radius: 8px;
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+        .canal-header {
+            background-color: #222;
+            padding: 6px 12px;
+            font-size: 14px;
+            font-weight: bold;
+            text-transform: uppercase;
+            border-bottom: 1px solid #333;
+            display: flex;
+            justify-content: space-between;
             align-items: center;
+        }
+        .canal-tag {
+            background-color: #555;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 11px;
+        }
+        video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
             background: black;
         }
-        .video-js {
-            width: 100% !important;
-            height: 100% !important;
+        .error-msg {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: #888;
+            font-size: 14px;
+            text-align: center;
         }
     </style>
 </head>
 <body>
 
-    <div id="lista-canales">
-        <h3>Mis Canales</h3>
-        <div id="botones-canales">Cargando canales...</div>
-    </div>
+    <h2>Multiview Premium | 6 Canales en Vivo</h2>
 
-    <div id="contenedor-reproductor">
-        <video id="mi-reproductor" class="video-js vjs-default-skin" controls preload="auto" autoplay muted></video>
+    <div class="grid-container">
+        <div class="canal-box">
+            <div class="canal-header"><span>TVN</span><span class="canal-tag">General</span></div>
+            <video id="video-tvn" controls autoplay muted playsinline></video>
+        </div>
+        <div class="canal-box">
+            <div class="canal-header"><span>T13</span><span class="canal-tag">Noticias</span></div>
+            <video id="video-t13" controls autoplay muted playsinline></video>
+        </div>
+        <div class="canal-box">
+            <div class="canal-header"><span>CHV</span><span class="canal-tag">General</span></div>
+            <video id="video-chv" controls autoplay muted playsinline></video>
+        </div>
+        <div class="canal-box">
+            <div class="canal-header"><span>MEGA</span><span class="canal-tag">General</span></div>
+            <video id="video-mega" controls autoplay muted playsinline></video>
+        </div>
+        <div class="canal-box">
+            <div class="canal-header"><span>CNN CHILE</span><span class="canal-tag">Noticias</span></div>
+            <video id="video-cnn" controls autoplay muted playsinline></video>
+        </div>
+        <div class="canal-box">
+            <div class="canal-header"><span>24 HORAS</span><span class="canal-tag">Noticias</span></div>
+            <video id="video-24h" controls autoplay muted playsinline></video>
+        </div>
     </div>
-
-    <script src="https://vjs.zencdn.net/8.10.0/video.min.js"></script>
 
     <script>
-        // Inicializar el reproductor de video
-        const player = videojs('mi-reproductor');
+        // Mapeo manual directo usando los enlaces estables de tu lista M3U
+        const canalesStreaming = {
+            'video-tvn': 'https://mdstrm.com/live-stream-playlist-v/555c9a91eb4886825b07ee7b.m3u8',
+            'video-t13': 'https://redirector.rudo.video/hls-video/10b92cafdf3646cbc1e727f3dc76863621a327fd/t13/t13.smil/playlist.m3u8',
+            'video-chv': 'https://redirector.rudo.video/hls-video/10b92cafdf3646cbc1e727f3dc76863621a327fd/chv/chv.smil/playlist.m3u8',
+            'video-mega': 'https://unlimited1-cl-isp.dps.live/mega/mega.smil/playlist.m3u8',
+            'video-cnn': 'https://redirector.rudo.video/hls-video/lvcl5/cnn/cnn.smil/playlist.m3u8?DVR',
+            'video-24h': 'https://mdstrm.com/live-stream-playlist/689ba606ecfe7915e1f8f741.m3u8'
+        };
 
-        // Función para leer y procesar el archivo M3U
-        async function cargarM3U() {
-            try {
-                // Buscamos el archivo canales.m3u que está en tu repositorio
-                const respuesta = await fetch('canales.m3u');
-                const texto = await respuesta.text();
-                
-                const lineas = texto.split('\n');
-                const contenedor = document.getElementById('botones-canales');
-                contenedor.innerHTML = ''; // Limpiar mensaje de carga
-
-                let nombreCanal = '';
-
-                lineas.forEach(linea => {
-                    linea = linea.trim();
-                    
-                    // Si la línea contiene la información del canal (#EXTINF)
-                    if (linea.startsWith('#EXTINF:')) {
-                        // Extraemos el nombre del canal (lo que va después de la última coma)
-                        const partes = linea.split(',');
-                        nombreCanal = partes[partes.length - 1].trim();
-                    } 
-                    // Si la línea es la URL del canal y ya tenemos un nombre guardado
-                    else if (linea.startsWith('http') && nombreCanal !== '') {
-                        const urlCanal = linea;
-
-                        // Creamos el botón en la lista para este canal
-                        const boton = document.createElement('button');
-                        boton.className = 'canal-btn';
-                        boton.innerText = nombreCanal;
-                        
-                        // Al hacer clic, el reproductor carga este canal
-                        boton.onclick = () => {
-                            player.src({
-                                src: urlCanal,
-                                type: 'application/x-mpegURL' // Formato HLS (.m3u8) común en IPTV
-                            });
-                            player.play();
-                        };
-
-                        contenedor.appendChild(boton);
-                        nombreCanal = ''; // Resetear para el siguiente canal
-                    }
-                });
-
-            } catch (error) {
-                console.error("Error cargando la lista M3U:", error);
-                document.getElementById('botones-canales').innerText = 'Error al cargar canales.';
+        // Función para inicializar el reproductor HLS en cada cuadro de video
+        function iniciarStreaming(idVideo, url) {
+            const video = document.getElementById(idVideo);
+            
+            if (Hls.isSupported()) {
+                const hls = new Hls();
+                hls.loadSource(url);
+                hls.attachMedia(video);
+            } 
+            // Soporte nativo para navegadores basados en Apple (Safari / iOS)
+            else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+                video.src = url;
             }
         }
 
-        // Ejecutar la función al cargar la página
-        cargarM3U();
+        // Ejecutar la carga simultánea al abrir la página
+        window.addEventListener('DOMContentLoaded', () => {
+            for (const id in canalesStreaming) {
+                iniciarStreaming(id, canalesStreaming[id]);
+            }
+        });
     </script>
 </body>
 </html>
