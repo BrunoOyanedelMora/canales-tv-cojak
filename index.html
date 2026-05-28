@@ -460,10 +460,11 @@
         let canalSeleccionadoTemporal = null;
         let canalesIniciales = {};
 
-        // Variables de Control para Modo Último Minuto
+        // Variables de Control para Modos Dinámicos
         let breakingNewsActivo = false;
         let breakingSlotId = null;
         let estadosMutePrevios = {};
+        let ultimoSyncId = "0";
 
         function reproducirCanal(slotId, url, nombre) {
             const video = document.getElementById(`video-${slotId}`);
@@ -487,17 +488,18 @@
             }
         }
 
-        // --- MEJORA 1: CONTROL DE AUDIO INDIVIDUAL ---
+        // CONTROL DE AUDIO INDIVIDUAL
         function toggleMuteSlot(slotId) {
             const video = document.getElementById(`video-${slotId}`);
             const btn = document.getElementById(`mute-${slotId}`);
+            if(!video) return;
             video.muted = !video.muted;
             btn.innerText = video.muted ? "🔇" : "🔊";
             btn.style.background = video.muted ? "" : "var(--accent-green)";
             btn.style.borderColor = video.muted ? "" : "var(--accent-green)";
         }
 
-        // --- MEJORA 2: MODO ÚLTIMO MINUTO (BREAKING NEWS COYUNTURAL) ---
+        // MODO ÚLTIMO MINUTO (MAXIMIZAR E INTERRUMPIR AUDIO)
         function toggleBreakingNews(slotId) {
             const grid = document.getElementById('multiview-grid');
             
@@ -511,21 +513,28 @@
                     const video = document.getElementById(`video-${i}`);
                     const btnMute = document.getElementById(`mute-${i}`);
                     
-                    estadosMutePrevios[i] = video.muted;
+                    estadosMutePrevios[i] = video ? video.muted : true;
 
                     if (i !== slotId) {
-                        box.classList.add('hidden-breaking');
-                        video.muted = true;
-                        btnMute.innerText = "🔇";
-                        btnMute.style.background = "";
+                        if(box) box.classList.add('hidden-breaking');
+                        if(video) video.muted = true;
+                        if(btnMute) {
+                            btnMute.innerText = "🔇";
+                            btnMute.style.background = "";
+                        }
                     } else {
-                        box.classList.add('maximized-breaking');
-                        video.muted = false; // Forzar audio al canal de la noticia
-                        btnMute.innerText = "🔊";
-                        btnMute.style.background = "var(--accent-green)";
-                        document.getElementById(`breaking-${i}`).innerText = "🟢 Restaurar Grilla";
-                        document.getElementById(`breaking-${i}`).style.background = "var(--accent-green)";
-                        document.getElementById(`breaking-${i}`).style.color = "#000";
+                        if(box) box.classList.add('maximized-breaking');
+                        if(video) video.muted = false; 
+                        if(btnMute) {
+                            btnMute.innerText = "🔊";
+                            btnMute.style.background = "var(--accent-green)";
+                        }
+                        const btnBreak = document.getElementById(`breaking-${i}`);
+                        if(btnBreak) {
+                            btnBreak.innerText = "🟢 Restaurar Grilla";
+                            btnBreak.style.background = "var(--accent-green)";
+                            btnBreak.style.color = "#000";
+                        }
                     }
                 }
             } else {
@@ -537,30 +546,33 @@
                     const video = document.getElementById(`video-${i}`);
                     const btnMute = document.getElementById(`mute-${i}`);
 
-                    box.classList.remove('hidden-breaking', 'maximized-breaking');
+                    if(box) box.classList.remove('hidden-breaking', 'maximized-breaking');
                     
-                    // Devolver visibilidad según la cantidad configurada de pantallas
                     if (i <= pantallasVisiblesActuales) {
-                        box.classList.remove('hidden');
+                        if(box) box.classList.remove('hidden');
                     } else {
-                        box.classList.add('hidden');
+                        if(box) box.classList.add('hidden');
                     }
 
-                    // Restaurar audio previo
-                    video.muted = estadosMutePrevios[i] !== undefined ? estadosMutePrevios[i] : true;
-                    btnMute.innerText = video.muted ? "🔇" : "🔊";
-                    btnMute.style.background = video.muted ? "" : "var(--accent-green)";
+                    if(video) {
+                        video.muted = estadosMutePrevios[i] !== undefined ? estadosMutePrevios[i] : true;
+                        if(btnMute) btnMute.innerText = video.muted ? "🔇" : "🔊";
+                        if(btnMute) btnMute.style.background = video.muted ? "" : "var(--accent-green)";
+                    }
                     
-                    document.getElementById(`breaking-${i}`).innerText = "🚨 Último Minuto";
-                    document.getElementById(`breaking-${i}`).style.background = "";
-                    document.getElementById(`breaking-${i}`).style.color = "";
+                    const btnBreak = document.getElementById(`breaking-${i}`);
+                    if(btnBreak) {
+                        btnBreak.innerText = "🚨 Último Minuto";
+                        btnBreak.style.background = "";
+                        btnBreak.style.color = "";
+                    }
                 }
                 breakingSlotId = null;
             }
         }
 
         function cambiarCantidadPantallas(cantidad) {
-            if (breakingNewsActivo) return; // Bloquear cambio si está en curso un último minuto
+            if (breakingNewsActivo) return; 
             
             pantallasVisiblesActuales = cantidad;
             const grid = document.getElementById('multiview-grid');
@@ -585,33 +597,58 @@
             }
         }
 
-        // --- RECEPTOR AUTOMÁTICO DE TU APP DE ESCRITORIO (GITHUB ONLY) ---
+        // RECEPTOR DE COMANDOS EN TIEMPO REAL DESDE EL CONTROL PANEL (MAC)
         async function verificarSenalesRemotas() {
-            if (breakingNewsActivo) return; // Pausar sincronización si estás transmitiendo una emergencia
             try {
                 const respuesta = await fetch(`live-config.json?t=${Date.now()}`);
                 if (!respuesta.ok) return;
                 
                 const datosNuevos = await respuesta.json();
                 
-                for (let i = 1; i <= 6; i++) {
-                    if (datosNuevos[i]) {
-                        const streamNuevo = datosNuevos[i];
-                        if (!canalesIniciales[i] || canalesIniciales[i].url !== streamNuevo.url) {
-                            canalesIniciales[i] = streamNuevo;
-                            if (i <= pantallasVisiblesActuales) {
-                                reproducirCanal(i, streamNuevo.url, streamNuevo.nombre);
+                // 1. ACCIÓN REMOTA: Sincronizar streams (Remover buffers con delay)
+                if (datosNuevos.sync_trigger && datosNuevos.sync_trigger !== ultimoSyncId) {
+                    ultimoSyncId = datosNuevos.sync_trigger;
+                    console.log("🔴 Pulso recibido: Purgando delay de transmisiones.");
+                    
+                    for (let i = 1; i <= 6; i++) {
+                        const video = document.getElementById(`video-${i}`);
+                        if (video && video.seekable && video.seekable.length > 0) {
+                            video.currentTime = video.seekable.end(0) - 0.5; 
+                        }
+                    }
+                }
+
+                // 2. ACCIÓN REMOTA: Disparador de Alerta de Emergencia / Último Minuto
+                if (datosNuevos.breaking_trigger) {
+                    const slotAlerta = parseInt(datosNuevos.breaking_trigger);
+                    if (slotAlerta > 0 && !breakingNewsActivo) {
+                        toggleBreakingNews(slotAlerta); 
+                    } else if (slotAlerta === 0 && breakingNewsActivo) {
+                        toggleBreakingNews(breakingSlotId); 
+                    }
+                }
+                
+                // 3. ACCIÓN REMOTA: Actualización de canales por pantalla
+                if (!breakingNewsActivo) {
+                    for (let i = 1; i <= 6; i++) {
+                        if (datosNuevos[i]) {
+                            const streamNuevo = datosNuevos[i];
+                            if (!canalesIniciales[i] || canalesIniciales[i].url !== streamNuevo.url) {
+                                canalesIniciales[i] = streamNuevo;
+                                if (i <= pantallasVisiblesActuales) {
+                                    reproducirCanal(i, streamNuevo.url, streamNuevo.nombre);
+                                }
                             }
                         }
                     }
                 }
             } catch (e) {
-                console.log("Esperando inicialización remota...");
+                console.log("Esperando lectura del Panel Maestro...");
             }
         }
 
-        // Escucha cambios del panel de tu Mac cada 20 segundos
-        setInterval(verificarSenalesRemotas, 20000);
+        // Sincronización veloz cada 3 segundos para comandos inmediatos
+        setInterval(verificarSenalesRemotas, 3000);
 
         function toggleDropdown(e) { e.stopPropagation(); document.getElementById('dropdown-cantidad').classList.toggle('show'); }
         window.addEventListener('click', () => { document.getElementById('dropdown-cantidad').classList.remove('show'); });
@@ -620,7 +657,7 @@
             if (!document.fullscreenElement) { document.documentElement.requestFullscreen(); } else { document.exitFullscreen(); }
         }
 
-        // Lector M3U Avanzado por Carpetas Dobles
+        // Lector M3U Avanzado Dinámico
         async function cargarCatalogoCategorizadoM3U() {
             try {
                 const respuesta = await fetch('canales.m3u');
@@ -754,12 +791,11 @@
 
         window.addEventListener('DOMContentLoaded', async () => {
             await verificarSenalesRemotas();
-            // Respaldo por si no hay configuración en la nube aún
             if (Object.keys(canalesIniciales).length === 0) {
                 canalesIniciales = {
                     1: { nombre: 'TVN', url: 'https://mdstrm.com/live-stream-playlist-v/555c9a91eb4886825b07ee7b.m3u8' },
                     2: { nombre: 'T13', url: 'https://redirector.rudo.video/hls-video/10b92cafdf3646cbc1e727f3dc76863621a327fd/t13/t13.smil/playlist.m3u8' },
-                    3: { text: 'CHV', url: 'https://redirector.rudo.video/hls-video/10b92cafdf3646cbc1e727f3dc76863621a327fd/chv/chv.smil/playlist.m3u8' },
+                    3: { nombre: 'CHV', url: 'https://redirector.rudo.video/hls-video/10b92cafdf3646cbc1e727f3dc76863621a327fd/chv/chv.smil/playlist.m3u8' },
                     4: { nombre: 'MEGA', url: 'https://unlimited1-cl-isp.dps.live/mega/mega.smil/playlist.m3u8' },
                     5: { nombre: 'CNN CHILE', url: 'https://jireh-4-hls-video-cl-isp.dps.live/hls-video/lvcl5/cnn/cnn.smil/playlist.m3u8' },
                     6: { nombre: '24 HORAS', url: 'https://mdstrm.com/live-stream-playlist/689ba606ecfe7915e1f8f741.m3u8' }
