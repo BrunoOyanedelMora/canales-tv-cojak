@@ -6,33 +6,40 @@
     <title>Transmisiones en Vivo | Oficina Juventud Republicana</title>
     <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
     <style>
-        body {
-            margin: 0;
-            padding: 10px;
-            background-color: #111;
-            font-family: Arial, sans-serif;
-            color: white;
-            box-sizing: border-box;
-            height: 100vh;
-            display: flex;
-            flex-direction: column;
-            overflow: hidden;
+        :root {
+            --bg-main: #111;
+            --bg-card: #1e1e1e;
+            --bg-header: #2a2a2a;
+            --accent: #ff4444;
+            --border: #333;
         }
 
-        /* Barra Superior */
+        body {
+            margin: 0;
+            padding: 15px;
+            background-color: var(--bg-main);
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+            color: white;
+            box-sizing: border-box;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Barra Superior Responsiva */
         .header-bar {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 10px;
-            padding: 0 5px;
-            gap: 10px;
+            margin-bottom: 15px;
+            padding: 10px;
+            background: var(--bg-card);
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            gap: 15px;
+            flex-wrap: wrap;
         }
-        .header-left {
-            display: flex;
-            gap: 10px;
-        }
-        .header-right {
+        .header-left, .header-right {
             display: flex;
             gap: 10px;
             position: relative;
@@ -41,123 +48,150 @@
             margin: 0;
             font-size: 18px;
             color: #fff;
-            flex-grow: 1;
             text-align: center;
+            flex: 1;
+            min-width: 250px;
         }
         .btn-header {
-            background-color: #222;
+            background-color: var(--bg-header);
             color: white;
             border: 1px solid #444;
-            padding: 8px 14px;
+            padding: 8px 16px;
             cursor: pointer;
-            border-radius: 4px;
+            border-radius: 6px;
             font-size: 14px;
-            font-weight: bold;
-            transition: background 0.2s;
-            display: flex;
-            align-items: center;
-            gap: 5px;
+            font-weight: 600;
+            transition: all 0.2s ease;
         }
         .btn-header:hover {
             background-color: #3d3d3d;
+            border-color: #666;
         }
 
-        /* Menú Desplegable de Cantidad */
+        /* Menú Selector de Cantidad */
         .dropdown-menu {
             display: none;
             position: absolute;
             top: 110%;
             right: 0;
-            background-color: #222;
+            background-color: var(--bg-card);
             border: 1px solid #444;
-            border-radius: 4px;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.7);
+            border-radius: 6px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.8);
             z-index: 1500;
-            min-width: 160px;
+            min-width: 180px;
+            overflow: hidden;
         }
         .dropdown-menu.show {
             display: block;
         }
         .dropdown-item {
             width: 100%;
-            padding: 10px 15px;
+            padding: 12px 16px;
             background: none;
             border: none;
             color: white;
             text-align: left;
             cursor: pointer;
             font-size: 14px;
+            transition: background 0.2s;
         }
         .dropdown-item:hover {
-            background-color: #ff4444;
+            background-color: var(--accent);
+        }
+
+        /* Zona de Contenido Principal Adaptable */
+        .main-content-area {
+            flex-grow: 1;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            width: 100%;
+            max-width: 2560px; /* Soporte nativo óptimo para 2K/4K */
+            margin: 0 auto;
         }
 
         /* Contenedor Multiview Dinámico */
         .grid-container {
             display: grid;
-            gap: 12px;
-            flex-grow: 1;
-            transition: all 0.3s ease;
+            gap: 15px;
+            width: 100%;
+            box-sizing: border-box;
         }
         
-        /* Reglas dinámicas aplicadas por JavaScript según la cantidad */
-        .grid-1 { grid-template-columns: 1fr; grid-template-rows: 1fr; }
-        .grid-2 { grid-template-columns: repeat(2, 1fr); grid-template-rows: 1fr; }
-        .grid-3 { grid-template-columns: repeat(3, 1fr); grid-template-rows: 1fr; }
-        .grid-4 { grid-template-columns: repeat(2, 1fr); grid-template-rows: repeat(2, 1fr); }
-        .grid-5, .grid-6 { grid-template-columns: repeat(3, 1fr); grid-template-rows: repeat(2, 1fr); }
+        /* Grillas Inteligentes basadas en Aspect-Ratio */
+        .grid-1 { grid-template-columns: 1fr; }
+        .grid-2 { grid-template-columns: repeat(2, 1fr); }
+        .grid-3 { grid-template-columns: repeat(3, 1fr); }
+        .grid-4 { grid-template-columns: repeat(2, 1fr); }
+        .grid-5, .grid-6 { grid-template-columns: repeat(3, 1fr); }
+
+        @media (max-width: 900px) {
+            .grid-2, .grid-3, .grid-4, .grid-5, .grid-6 {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+        @media (max-width: 600px) {
+            .grid-container { grid-template-columns: 1fr !important; }
+        }
 
         .canal-box {
             background-color: #000;
-            border: 2px solid #333;
+            border: 2px solid var(--border);
             border-radius: 8px;
-            position: relative;
-            overflow: hidden;
             display: flex;
             flex-direction: column;
+            overflow: hidden;
+            aspect-ratio: 16 / 9; /* Mantiene la proporción de TV perfecta siempre */
+            width: 100%;
         }
         .canal-box.hidden {
             display: none !important;
         }
         .canal-header {
-            background-color: #222;
-            padding: 6px 12px;
+            background-color: var(--bg-header);
+            padding: 8px 12px;
             font-size: 13px;
             font-weight: bold;
-            text-transform: uppercase;
-            border-bottom: 1px solid #333;
+            border-bottom: 1px solid var(--border);
             display: flex;
             justify-content: space-between;
             align-items: center;
         }
         .canal-num {
-            background-color: #ff4444;
+            background-color: var(--accent);
             color: white;
-            padding: 1px 6px;
-            border-radius: 3px;
+            padding: 2px 8px;
+            border-radius: 4px;
             font-size: 11px;
+        }
+        .video-wrapper {
+            flex-grow: 1;
+            position: relative;
+            background: #000;
+            overflow: hidden;
         }
         video {
             width: 100%;
             height: 100%;
-            object-fit: cover;
-            background: black;
+            object-fit: contain;
+            display: block;
         }
 
-        /* Panel Lateral Desplegable (Más Canales) */
+        /* Panel Lateral Desplegable Avanzado */
         .sidebar {
             position: fixed;
             top: 0;
-            left: -320px;
-            width: 300px;
+            left: -350px;
+            width: 330px;
             height: 100%;
-            background-color: #1a1a1a;
-            box-shadow: 2px 0 10px rgba(0,0,0,0.5);
-            transition: left 0.3s ease;
-            z-index: 1000;
+            background-color: #161616;
+            box-shadow: 4px 0 20px rgba(0,0,0,0.7);
+            transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            z-index: 2000;
             display: flex;
             flex-direction: column;
-            padding: 10px;
+            padding: 15px;
             box-sizing: border-box;
         }
         .sidebar.active {
@@ -167,45 +201,110 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            border-bottom: 1px solid #333;
-            padding-bottom: 10px;
-            margin-bottom: 10px;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 12px;
+            margin-bottom: 12px;
         }
         .close-sidebar {
             background: none;
             border: none;
-            color: white;
-            font-size: 20px;
+            color: #888;
+            font-size: 22px;
             cursor: pointer;
+            transition: color 0.2s;
         }
+        .close-sidebar:hover { color: white; }
+        
         .lista-canales-scroll {
             overflow-y: auto;
             flex-grow: 1;
+            padding-right: 5px;
         }
+
+        /* Estilos de Carpetas y Acordeones */
+        .categoria-container {
+            margin-bottom: 15px;
+        }
+        .categoria-titulo {
+            background: #222;
+            color: #fff;
+            width: 100%;
+            text-align: left;
+            padding: 10px;
+            font-weight: bold;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 14px;
+            margin-bottom: 5px;
+        }
+        .categoria-titulo:hover { background: #2a2a2a; }
+        .categoria-contenido {
+            display: none;
+            padding-left: 8px;
+            border-left: 2px solid var(--accent);
+            margin-bottom: 10px;
+        }
+        .categoria-contenido.open { display: block; }
+
+        /* Subcarpetas para transmisiones duplicadas */
+        .subcarpeta-container {
+            margin-bottom: 5px;
+        }
+        .subcarpeta-titulo {
+            background: #282828;
+            color: #ccc;
+            width: 100%;
+            text-align: left;
+            padding: 8px 10px;
+            font-size: 13px;
+            border: 1px dashed #444;
+            border-radius: 4px;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 3px;
+        }
+        .subcarpeta-titulo:hover { background: #333; color: white; }
+        .subcarpeta-contenido {
+            display: none;
+            padding-left: 10px;
+            background: #1c1c1c;
+            border-radius: 0 0 4px 4px;
+        }
+        .subcarpeta-contenido.open { display: block; }
+
+        /* Botón de canal final */
         .canal-item {
             width: 100%;
-            padding: 10px;
+            padding: 8px 10px;
             background: #2b2b2b;
             border: 1px solid #3a3a3a;
             color: white;
             text-align: left;
-            margin-bottom: 6px;
+            margin-bottom: 4px;
             cursor: pointer;
             border-radius: 4px;
             font-size: 13px;
             display: flex;
             align-items: center;
             gap: 10px;
+            transition: background 0.2s;
         }
         .canal-item:hover {
             background: #444;
+            border-color: #555;
         }
         .canal-item img {
-            width: 24px;
-            height: 24px;
+            width: 22px;
+            height: 22px;
             object-fit: contain;
             background: #fff;
-            border-radius: 3px;
+            border-radius: 4px;
             padding: 1px;
         }
 
@@ -214,42 +313,45 @@
             display: none;
             position: fixed;
             top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.8);
-            z-index: 2000;
+            background: rgba(0,0,0,0.85);
+            z-index: 3000;
             justify-content: center;
             align-items: center;
         }
         .modal-content {
-            background: #222;
-            padding: 20px;
-            border-radius: 8px;
+            background: #1f1f1f;
+            padding: 24px;
+            border-radius: 12px;
             text-align: center;
-            max-width: 400px;
+            max-width: 420px;
             width: 90%;
             border: 1px solid #444;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
         }
         .modal-grid {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
-            gap: 10px;
-            margin-top: 15px;
+            gap: 12px;
+            margin-top: 20px;
         }
         .btn-grid-select {
-            background: #333;
+            background: #2a2a2a;
             color: white;
-            border: 1px solid #555;
-            padding: 15px;
-            font-size: 16px;
+            border: 1px solid #444;
+            padding: 18px;
+            font-size: 18px;
             font-weight: bold;
             cursor: pointer;
-            border-radius: 4px;
+            border-radius: 6px;
+            transition: all 0.2s;
         }
-        .btn-grid-select:hover {
-            background: #ff4444;
-            border-color: #ff4444;
+        .btn-grid-select:hover:not(:disabled) {
+            background: var(--accent);
+            border-color: var(--accent);
+            transform: scale(1.05);
         }
         .btn-grid-select:disabled {
-            background: #151515;
+            background: #141414;
             color: #444;
             border-color: #222;
             cursor: not-allowed;
@@ -266,7 +368,7 @@
         <h2>Transmisiones en Vivo | Oficina Juventud Republicana</h2>
         
         <div class="header-right">
-            <button class="btn-header" onclick="toggleDropdown()">🔢 Cantidad de transmisiones ▾</button>
+            <button class="btn-header" onclick="toggleDropdown(event)">🔢 Cantidad de transmisiones ▾</button>
             <div class="dropdown-menu" id="dropdown-cantidad">
                 <button class="dropdown-item" onclick="cambiarCantidadPantallas(1)">1 Pantalla</button>
                 <button class="dropdown-item" onclick="cambiarCantidadPantallas(2)">2 Pantallas</button>
@@ -279,36 +381,38 @@
         </div>
     </div>
 
-    <div class="grid-container grid-6" id="multiview-grid">
-        <div class="canal-box" id="slot-1" data-slot="1">
-            <div class="canal-header"><span id="title-1">TVN</span><span class="canal-num">Pantalla 1</span></div>
-            <video id="video-1" controls autoplay muted playsinline></video>
-        </div>
-        <div class="canal-box" id="slot-2" data-slot="2">
-            <div class="canal-header"><span id="title-2">T13</span><span class="canal-num">Pantalla 2</span></div>
-            <video id="video-2" controls autoplay muted playsinline></video>
-        </div>
-        <div class="canal-box" id="slot-3" data-slot="3">
-            <div class="canal-header"><span id="title-3">CHV</span><span class="canal-num">Pantalla 3</span></div>
-            <video id="video-3" controls autoplay muted playsinline></video>
-        </div>
-        <div class="canal-box" id="slot-4" data-slot="4">
-            <div class="canal-header"><span id="title-4">MEGA</span><span class="canal-num">Pantalla 4</span></div>
-            <video id="video-4" controls autoplay muted playsinline></video>
-        </div>
-        <div class="canal-box" id="slot-5" data-slot="5">
-            <div class="canal-header"><span id="title-5">CNN CHILE</span><span class="canal-num">Pantalla 5</span></div>
-            <video id="video-5" controls autoplay muted playsinline></video>
-        </div>
-        <div class="canal-box" id="slot-6" data-slot="6">
-            <div class="canal-header"><span id="title-6">24 HORAS</span><span class="canal-num">Pantalla 6</span></div>
-            <video id="video-6" controls autoplay muted playsinline></video>
+    <div class="main-content-area">
+        <div class="grid-container grid-6" id="multiview-grid">
+            <div class="canal-box" id="slot-1" data-slot="1">
+                <div class="canal-header"><span id="title-1">TVN</span><span class="canal-num">Pantalla 1</span></div>
+                <div class="video-wrapper"><video id="video-1" controls autoplay muted playsinline></video></div>
+            </div>
+            <div class="canal-box" id="slot-2" data-slot="2">
+                <div class="canal-header"><span id="title-2">T13</span><span class="canal-num">Pantalla 2</span></div>
+                <div class="video-wrapper"><video id="video-2" controls autoplay muted playsinline></video></div>
+            </div>
+            <div class="canal-box" id="slot-3" data-slot="3">
+                <div class="canal-header"><span id="title-3">CHV</span><span class="canal-num">Pantalla 3</span></div>
+                <div class="video-wrapper"><video id="video-3" controls autoplay muted playsinline></video></div>
+            </div>
+            <div class="canal-box" id="slot-4" data-slot="4">
+                <div class="canal-header"><span id="title-4">MEGA</span><span class="canal-num">Pantalla 4</span></div>
+                <div class="video-wrapper"><video id="video-4" controls autoplay muted playsinline></video></div>
+            </div>
+            <div class="canal-box" id="slot-5" data-slot="5">
+                <div class="canal-header"><span id="title-5">CNN CHILE</span><span class="canal-num">Pantalla 5</span></div>
+                <div class="video-wrapper"><video id="video-5" controls autoplay muted playsinline></video></div>
+            </div>
+            <div class="canal-box" id="slot-6" data-slot="6">
+                <div class="canal-header"><span id="title-6">24 HORAS</span><span class="canal-num">Pantalla 6</span></div>
+                <div class="video-wrapper"><video id="video-6" controls autoplay muted playsinline></video></div>
+            </div>
         </div>
     </div>
 
     <div class="sidebar" id="sidebar-canales">
         <div class="sidebar-header">
-            <h3>Catálogo de Canales</h3>
+            <h3 style="margin:0; font-size: 16px;">Catálogo de Canales</h3>
             <button class="close-sidebar" onclick="toggleSidebar()">✕</button>
         </div>
         <div class="lista-canales-scroll" id="lista-m3u-items">
@@ -317,9 +421,9 @@
 
     <div class="modal" id="modal-seleccion">
         <div class="modal-content">
-            <h3 style="margin-top:0;">¿En qué pantalla quieres reemplazar el canal?</h3>
-            <p id="modal-canal-elegido" style="color:#aaa; font-size:14px;"></p>
-            <div class="modal-grid" id="modal-botones-grid">
+            <h3 style="margin-top:0; font-size:16px;">¿En qué pantalla deseas cargar este canal?</h3>
+            <p id="modal-canal-elegido" style="color:var(--accent); font-weight:bold; font-size:14px;"></p>
+            <div class="modal-grid">
                 <button class="btn-grid-select" id="btn-select-1" onclick="reemplazarEnSlot(1)">1</button>
                 <button class="btn-grid-select" id="btn-select-2" onclick="reemplazarEnSlot(2)">2</button>
                 <button class="btn-grid-select" id="btn-select-3" onclick="reemplazarEnSlot(3)">3</button>
@@ -334,6 +438,7 @@
     <script>
         const hlsInstances = {};
         let pantallasVisiblesActuales = 6;
+        let canalSeleccionadoTemporal = null;
 
         const canalesIniciales = {
             1: { nombre: 'TVN', url: 'https://mdstrm.com/live-stream-playlist-v/555c9a91eb4886825b07ee7b.m3u8' },
@@ -343,8 +448,6 @@
             5: { nombre: 'CNN CHILE', url: 'https://jireh-4-hls-video-cl-isp.dps.live/hls-video/lvcl5/cnn/cnn.smil/playlist.m3u8' },
             6: { nombre: '24 HORAS', url: 'https://mdstrm.com/live-stream-playlist/689ba606ecfe7915e1f8f741.m3u8' }
         };
-
-        let canalSeleccionadoTemporal = null;
 
         function reproducirCanal(slotId, url, nombre) {
             const video = document.getElementById(`video-${slotId}`);
@@ -356,7 +459,7 @@
                 delete hlsInstances[slotId];
             }
 
-            if (!url) return; // Si es un slot oculto intencionalmente no cargamos nada
+            if (!url) return;
 
             if (Hls.isSupported()) {
                 const hls = new Hls();
@@ -368,51 +471,37 @@
             }
         }
 
-        // Lógica para redimensionar y acomodar la cuadrícula
         function cambiarCantidadPantallas(cantidad) {
             pantallasVisiblesActuales = cantidad;
             const grid = document.getElementById('multiview-grid');
             
-            // 1. Remover clases previas de estructura de grilla
             grid.className = 'grid-container';
-            // 2. Asignar la nueva clase de distribución simétrica
             grid.classList.add(`grid-${cantidad}`);
 
-            // 3. Mostrar u ocultar los contenedores de video correspondientes
             for (let i = 1; i <= 6; i++) {
                 const box = document.getElementById(`slot-${i}`);
                 if (i <= cantidad) {
                     box.classList.remove('hidden');
-                    // Si se vuelve a activar un cuadro y no tiene streaming cargado, le devolvemos su señal base
                     if (!hlsInstances[i]) {
                         reproducirCanal(i, canalesIniciales[i].url, canalesIniciales[i].nombre);
                     }
                 } else {
                     box.classList.add('hidden');
-                    // Pausamos y destruimos la instancia del canal oculto para ahorrar internet y procesamiento
                     if (hlsInstances[i]) {
                         hlsInstances[i].destroy();
                         delete hlsInstances[i];
                     }
                 }
             }
-            cerrarDropdown();
         }
 
-        // Control del menú de cantidad
-        function toggleDropdown() {
+        function toggleDropdown(e) {
+            e.stopPropagation();
             document.getElementById('dropdown-cantidad').classList.toggle('show');
         }
 
-        function cerrarDropdown() {
+        window.addEventListener('click', () => {
             document.getElementById('dropdown-cantidad').classList.remove('show');
-        }
-
-        // Cerrar menús al hacer click afuera
-        window.addEventListener('click', function(e) {
-            if (!e.target.matches('.btn-header')) {
-                cerrarDropdown();
-            }
         });
 
         function toggleSidebar() {
@@ -429,65 +518,161 @@
             }
         }
 
-        async function cargarCatalogoM3U() {
+        // Lector M3U Avanzado: Clasifica por Categorías y colapsa transmisiones del mismo canal
+        async function cargarCatalogoCategorizadoM3U() {
             try {
                 const respuesta = await fetch('canales.m3u');
                 const texto = await respuesta.text();
                 const lineas = texto.split('\n');
-                const contenedorLista = document.getElementById('lista-m3u-items');
-                contenedorLista.innerHTML = '';
-
-                let infoCanal = null;
+                
+                // Estructura de datos: { "Categoría": { "Nombre Base Canal": [ { canalObj }, { canalObj } ] } }
+                const mapaCategorias = {};
+                let infoTemporal = null;
 
                 lineas.forEach(linea => {
                     linea = linea.trim();
                     if (linea.startsWith('#EXTINF:')) {
                         const partesComa = linea.split(',');
-                        let nombre = partesComa[partesComa.length - 1].trim();
+                        let nombreCompleto = partesComa[partesComa.length - 1].trim();
                         
+                        // Extraer grupo original
+                        let grupoOriginal = "Otros Canales";
+                        const matchGrupo = linea.match(/group-title="([^"]+)"/);
+                        if (matchGrupo) grupoOriginal = matchGrupo[1].toLowerCase();
+
+                        // Normalizar categorías grandes solicitadas
+                        let categoriaFinal = "Otros Canales";
+                        if (grupoOriginal.includes('general') || nombreCompleto.includes('TVN') || nombreCompleto.includes('Canal 13') || nombreCompleto.includes('Chilevisión') || nombreCompleto.includes('Mega')) {
+                            categoriaFinal = "Canales Nacionales";
+                        } else if (grupoOriginal.includes('news') || grupoOriginal.includes('noticias')) {
+                            categoriaFinal = "Noticias";
+                        } else if (grupoOriginal.includes('music') || grupoOriginal.includes('radio')) {
+                            categoriaFinal = "Radios / Música";
+                        } else if (grupoOriginal.includes('culture') || grupoOriginal.includes('entertainment') || grupoOriginal.includes('kids')) {
+                            categoriaFinal = "Cultura y Entretenimiento";
+                        } else if (grupoOriginal.includes('sports') || grupoOriginal.includes('deportes')) {
+                            categoriaFinal = "Deportes";
+                        }
+
+                        // Capturar logo
                         let logoUrl = "";
                         const matchLogo = linea.match(/tvg-logo="([^"]+)"/);
                         if (matchLogo) logoUrl = matchLogo[1];
 
-                        infoCanal = { nombre: nombre, logo: logoUrl };
-                    } else if (linea.startsWith('http') && infoCanal) {
-                        const url = linea;
-                        const canalActual = { ...infoCanal, url: url };
+                        // Obtener nombre base limpio de números de transmisión como (1), (2) o [CL]
+                        let nombreBase = nombreCompleto.replace(/\s\(\d+\)/g, '').replace(/\[.*\]/g, '').trim();
 
-                        const boton = document.createElement('button');
-                        boton.className = 'canal-item';
-                        
-                        const imgHtml = canalActual.logo ? `<img src="${canalActual.logo}" alt="logo">` : `<div style="width:24px; height:24px; background:#444; border-radius:3px;"></div>`;
-                        boton.innerHTML = `${imgHtml} <span>${canalActual.nombre}</span>`;
-
-                        boton.onclick = () => {
-                            abrirModalSeleccion(canalActual);
+                        infoTemporal = { 
+                            nombreCompleto: nombreCompleto, 
+                            nombreBase: nombreBase, 
+                            categoria: categoriaFinal, 
+                            logo: logoUrl 
                         };
-
-                        contenedorLista.appendChild(boton);
-                        infoCanal = null;
+                    } else if (linea.startsWith('http') && infoTemporal) {
+                        infoTemporal.url = linea;
+                        
+                        // Inicializar estructuras en el mapa
+                        if (!mapaCategorias[infoTemporal.categoria]) mapaCategorias[infoTemporal.categoria] = {};
+                        if (!mapaCategorias[infoTemporal.categoria][infoTemporal.nombreBase]) {
+                            mapaCategorias[infoTemporal.categoria][infoTemporal.nombreBase] = [];
+                        }
+                        
+                        mapaCategorias[infoTemporal.categoria][infoTemporal.nombreBase].push(infoTemporal);
+                        infoTemporal = null;
                     }
                 });
+
+                renderizarCarpetas(mapaCategorias);
+
             } catch (e) {
-                document.getElementById('lista-m3u-items').innerText = "Error cargando archivo M3U.";
+                document.getElementById('lista-m3u-items').innerText = "Error procesando el archivo de canales.";
             }
+        }
+
+        // Dibuja las carpetas principales y subcarpetas en el HTML
+        function renderizarCarpetas(mapa) {
+            const contenedor = document.getElementById('lista-m3u-items');
+            contenedor.innerHTML = '';
+
+            // Forzar un orden limpio de carpetas grandes
+            const ordenCategorias = ["Canales Nacionales", "Noticias", "Radios / Música", "Cultura y Entretenimiento", "Deportes", "Otros Canales"];
+
+            ordenCategorias.forEach(cat => {
+                if (!mapa[cat]) return;
+
+                // Crear Carpeta Principal de la Categoría
+                const catDiv = document.createElement('div');
+                catDiv.className = 'categoria-container';
+
+                const btnCat = document.createElement('button');
+                btnCat.className = 'categoria-titulo';
+                btnCat.innerHTML = `<span>📁 ${cat}</span> <span>▾</span>`;
+                
+                const contenidoCat = document.createElement('div');
+                contenidoCat.className = 'categoria-contenido';
+
+                btnCat.onclick = () => {
+                    contenidoCat.classList.toggle('open');
+                    btnCat.querySelector('span:last-child').innerText = contenidoCat.classList.contains('open') ? '▴' : '▾';
+                };
+
+                // Iterar los canales bases dentro de esta categoría
+                for (const nombreBase in mapa[cat]) {
+                    const transmisiones = mapa[cat][nombreBase];
+
+                    if (transmisiones.length > 1) {
+                        // Caso A: Hay múltiples fuentes para el mismo canal -> Crear Subcarpeta
+                        const subDiv = document.createElement('div');
+                        subDiv.className = 'subcarpeta-container';
+
+                        const btnSub = document.createElement('button');
+                        btnSub.className = 'subcarpeta-titulo';
+                        btnSub.innerHTML = `<span>📂 ${nombreBase} (${transmisiones.length})</span> <span>▾</span>`;
+
+                        const contenidoSub = document.createElement('div');
+                        contenidoSub.className = 'subcarpeta-contenido';
+
+                        btnSub.onclick = () => {
+                            contenidoSub.classList.toggle('open');
+                            btnSub.querySelector('span:last-child').innerText = contenidoSub.classList.contains('open') ? '▴' : '▾';
+                        };
+
+                        transmisiones.forEach(t => {
+                            contenidoSub.appendChild(crearBotonCanalFinal(t));
+                        });
+
+                        subDiv.appendChild(btnSub);
+                        subDiv.appendChild(contenidoSub);
+                        contenidoCat.appendChild(subDiv);
+                    } else {
+                        // Caso B: Canal único -> Dibujar botón directo sin subcarpeta
+                        contenidoCat.appendChild(crearBotonCanalFinal(transmisiones[0]));
+                    }
+                }
+
+                catDiv.appendChild(btnCat);
+                catDiv.appendChild(contenidoCat);
+                contenedor.appendChild(catDiv);
+            });
+        }
+
+        function crearBotonCanalFinal(canal) {
+            const boton = document.createElement('button');
+            boton.className = 'canal-item';
+            const imgHtml = canal.logo ? `<img src="${canal.logo}" onerror="this.style.display='none'">` : `<div style="width:22px; height:22px; background:#444; border-radius:4px;"></div>`;
+            boton.innerHTML = `${imgHtml} <span>${canal.nombreCompleto}</span>`;
+            boton.onclick = () => abrirModalSeleccion(canal);
+            return boton;
         }
 
         function abrirModalSeleccion(canal) {
             canalSeleccionadoTemporal = canal;
-            document.getElementById('modal-canal-elegido').innerText = `Seleccionaste: ${canal.nombre}`;
+            document.getElementById('modal-canal-elegido').innerText = canal.nombreCompleto;
             
-            // Deshabilitar botones de pantallas que actualmente están ocultas por el usuario
             for (let i = 1; i <= 6; i++) {
-                const btn = document.getElementById(`btn-select-1`);
-                const botonSlot = document.getElementById(`btn-select-${i}`);
-                if (i <= pantallasVisiblesActuales) {
-                    botonSlot.disabled = false;
-                } else {
-                    botonSlot.disabled = true;
-                }
+                const btnSlot = document.getElementById(`btn-select-${i}`);
+                btnSlot.disabled = (i > pantallasVisiblesActuales);
             }
-
             document.getElementById('modal-seleccion').style.display = 'flex';
         }
 
@@ -498,7 +683,7 @@
 
         function reemplazarEnSlot(slotId) {
             if (canalSeleccionadoTemporal) {
-                reproducirCanal(slotId, canalSeleccionadoTemporal.url, canalSeleccionadoTemporal.nombre);
+                reproducirCanal(slotId, canalSeleccionadoTemporal.url, canalSeleccionadoTemporal.nombreCompleto);
                 cerrarModal();
                 toggleSidebar();
             }
@@ -508,7 +693,8 @@
             for (const slot in canalesIniciales) {
                 reproducirCanal(slot, canalesIniciales[slot].url, canalesIniciales[slot].nombre);
             }
-            cargarCatalogoM3U();
+            // Ejecutar el nuevo categorizador inteligente
+            cargarCatalogoCategorizadoM3U();
         });
     </script>
 </body>
