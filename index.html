@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Multiview Clean 4X</title>
+    <title>Multiview Pure Live 4X</title>
     <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
     <style>
         html, body {
@@ -15,14 +15,14 @@
             overflow: hidden;
             box-sizing: border-box;
         }
-        /* Cuadrícula pura de 2x2 sin márgenes ni textos */
+        /* Cuadrícula pura de 2x2 absoluta, sin textos, márgenes ni overlays */
         .grid-container {
             display: grid;
             grid-template-columns: repeat(2, 1fr);
             grid-template-rows: repeat(2, 1fr);
             width: 100%;
             height: 100%;
-            gap: 2px; /* Pequeña separación negra entre pantallas, cambia a 0px si lo quieres 100% pegado */
+            gap: 0px; /* 0 píxeles para que las pantallas estén totalmente unidas */
         }
         .canal-box {
             background-color: #000;
@@ -33,7 +33,7 @@
         video {
             width: 100%;
             height: 100%;
-            object-fit: contain; /* Mantiene la proporción 16:9 original de la TV sin deformar */
+            object-fit: contain; /* Conserva la proporción nativa de la TV sin deformaciones */
             background-color: #000;
         }
     </style>
@@ -56,7 +56,7 @@
     </div>
 
     <script>
-        // Configuración de señales directas (TVN reemplazado por 24 Horas)
+        // Señales de streaming directo actualizadas
         const streams = {
             'video-24h': 'https://mdstrm.com/live-stream-playlist/689ba606ecfe7915e1f8f741.m3u8',
             'video-t13': 'https://redirector.rudo.video/hls-video/10b92cafdf3646cbc1e727f3dc76863621a327fd/t13/t13.smil/playlist.m3u8',
@@ -70,17 +70,31 @@
 
             if (Hls.isSupported()) {
                 const hls = new Hls({
-                    maxMaxBufferLength: 10,
-                    liveSyncDurationCount: 3,
-                    enableWorker: true
-                });
-                hls.loadSource(url);
-                hls.attachMedia(video);
-                hls.on(Hls.Events.MANIFEST_PARSED, function() {
-                    video.play().catch(e => console.log("Reproducción automática pausada por navegador:", e));
+                    enableWorker: true,
+                    maxMaxBufferLength: 8,
+                    // Parámetros críticos para forzar la sincronización en vivo y descartar retrasos de DVR
+                    liveSyncDuration: 1,          // Mantenerse a máximo 1 segundo del vivo real
+                    liveMaxDistanceDuration: 3,   // Si el stream se atrasa más de 3 segundos, lo fuerza a saltar al frente
+                    liveDurationInfinity: true
                 });
 
-                // Auto-recuperación silenciosa en caso de micro-caídas de señal
+                hls.loadSource(url);
+                hls.attachMedia(video);
+                
+                hls.on(Hls.Events.MANIFEST_PARSED, function() {
+                    video.play().catch(e => console.log("Play diferido por navegador:", e));
+                });
+
+                // Forzar de forma activa el salto al borde "En Vivo" absoluto en cuanto empiece la reproducción
+                video.addEventListener('playing', function() {
+                    if (!video.dataset.seekedLive && video.seekable.length > 0) {
+                        const puntoEnVivo = video.seekable.end(0);
+                        video.currentTime = puntoEnVivo - 1; // Salta directamente al tiempo real presente
+                        video.dataset.seekedLive = "true";
+                    }
+                }, { once: true });
+
+                // Recuperación automática ante micro-cortes
                 hls.on(Hls.Events.ERROR, function (event, data) {
                     if (data.fatal) {
                         switch (data.type) {
@@ -94,9 +108,13 @@
                     }
                 });
             } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+                // Alternativa nativa para navegadores como Safari (Apple)
                 video.src = url;
                 video.addEventListener('loadedmetadata', function() {
-                    video.play().catch(e => console.log("Reproducción automática pausada por navegador:", e));
+                    if (video.seekable.length > 0) {
+                        video.currentTime = video.seekable.end(0) - 1;
+                    }
+                    video.play().catch(e => console.log(e));
                 });
             }
         }
