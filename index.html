@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Multiview Pure Live 4X</title>
+    <title>Multiview Zero-Latency</title>
     <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
     <style>
         html, body {
@@ -15,14 +15,14 @@
             overflow: hidden;
             box-sizing: border-box;
         }
-        /* Cuadrícula pura de 2x2 absoluta, sin textos, márgenes ni overlays */
+        /* Cuadrícula pura de 2x2 absoluta, libre de títulos u overlays */
         .grid-container {
             display: grid;
             grid-template-columns: repeat(2, 1fr);
             grid-template-rows: repeat(2, 1fr);
             width: 100%;
             height: 100%;
-            gap: 0px; /* 0 píxeles para que las pantallas estén totalmente unidas */
+            gap: 0px; 
         }
         .canal-box {
             background-color: #000;
@@ -33,7 +33,7 @@
         video {
             width: 100%;
             height: 100%;
-            object-fit: contain; /* Conserva la proporción nativa de la TV sin deformaciones */
+            object-fit: contain;
             background-color: #000;
         }
     </style>
@@ -41,28 +41,30 @@
 <body>
 
     <div class="grid-container">
-        <div class="canal-box">
-            <video id="video-24h" controls autoplay muted playsinline></video>
-        </div>
-        <div class="canal-box">
-            <video id="video-t13" controls autoplay muted playsinline></video>
-        </div>
-        <div class="canal-box">
-            <video id="video-chv" controls autoplay muted playsinline></video>
-        </div>
-        <div class="canal-box">
-            <video id="video-mega" controls autoplay muted playsinline></video>
-        </div>
+        <div class="canal-box"><video id="video-24h" controls autoplay muted playsinline></video></div>
+        <div class="canal-box"><video id="video-t13" controls autoplay muted playsinline></video></div>
+        <div class="canal-box"><video id="video-chv" controls autoplay muted playsinline></video></div>
+        <div class="canal-box"><video id="video-mega" controls autoplay muted playsinline></video></div>
     </div>
 
     <script>
-        // Señales de streaming directo actualizadas
         const streams = {
             'video-24h': 'https://mdstrm.com/live-stream-playlist/689ba606ecfe7915e1f8f741.m3u8',
             'video-t13': 'https://redirector.rudo.video/hls-video/10b92cafdf3646cbc1e727f3dc76863621a327fd/t13/t13.smil/playlist.m3u8',
             'video-chv': 'https://redirector.rudo.video/hls-video/10b92cafdf3646cbc1e727f3dc76863621a327fd/chv/chv.smil/playlist.m3u8',
             'video-mega': 'https://unlimited1-cl-isp.dps.live/mega/mega.smil/playlist.m3u8'
         };
+
+        // Forzar el salto inmediato al extremo derecho del buffer (tiempo real actual)
+        function empujarAlVivoReal(video) {
+            if (video.seekable && video.seekable.length > 0) {
+                const extremoVivo = video.seekable.end(video.seekable.length - 1);
+                // Si detecta un desfase mayor a 4 segundos, salta al frente
+                if (extremoVivo - video.currentTime > 4) {
+                    video.currentTime = extremoVivo - 1;
+                }
+            }
+        }
 
         function iniciarStreaming(idVideo, url) {
             const video = document.getElementById(idVideo);
@@ -71,30 +73,33 @@
             if (Hls.isSupported()) {
                 const hls = new Hls({
                     enableWorker: true,
-                    maxMaxBufferLength: 8,
-                    // Parámetros críticos para forzar la sincronización en vivo y descartar retrasos de DVR
-                    liveSyncDuration: 1,          // Mantenerse a máximo 1 segundo del vivo real
-                    liveMaxDistanceDuration: 3,   // Si el stream se atrasa más de 3 segundos, lo fuerza a saltar al frente
-                    liveDurationInfinity: true
+                    lowLatencyMode: true,
+                    backBufferLength: 0,
+                    maxMaxBufferLength: 4,
+                    liveSyncDuration: 0,
+                    liveMaxDistanceDuration: 2
                 });
 
                 hls.loadSource(url);
                 hls.attachMedia(video);
                 
                 hls.on(Hls.Events.MANIFEST_PARSED, function() {
-                    video.play().catch(e => console.log("Play diferido por navegador:", e));
+                    video.play().catch(e => console.log("Auto-play prevenido:", e));
                 });
 
-                // Forzar de forma activa el salto al borde "En Vivo" absoluto en cuanto empiece la reproducción
-                video.addEventListener('playing', function() {
-                    if (!video.dataset.seekedLive && video.seekable.length > 0) {
-                        const puntoEnVivo = video.seekable.end(0);
-                        video.currentTime = puntoEnVivo - 1; // Salta directamente al tiempo real presente
-                        video.dataset.seekedLive = "true";
-                    }
-                }, { once: true });
+                // Sincronización proactiva cada vez que ingresa un fragmento nuevo de video
+                hls.on(Hls.Events.FRAG_CHANGED, function() {
+                    empujarAlVivoReal(video);
+                });
 
-                // Recuperación automática ante micro-cortes
+                // Bucle intensivo de corrección durante los primeros 20 segundos de carga
+                let sincronizaciones = 0;
+                const loopSincro = setInterval(() => {
+                    empujarAlVivoReal(video);
+                    sincronizaciones++;
+                    if (sincronizaciones > 20) clearInterval(loopSincro);
+                }, 1000);
+
                 hls.on(Hls.Events.ERROR, function (event, data) {
                     if (data.fatal) {
                         switch (data.type) {
@@ -108,11 +113,11 @@
                     }
                 });
             } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
-                // Alternativa nativa para navegadores como Safari (Apple)
+                // Soporte nativo de Apple (Safari / iOS)
                 video.src = url;
                 video.addEventListener('loadedmetadata', function() {
                     if (video.seekable.length > 0) {
-                        video.currentTime = video.seekable.end(0) - 1;
+                        video.currentTime = video.seekable.end(video.seekable.length - 1) - 1;
                     }
                     video.play().catch(e => console.log(e));
                 });
