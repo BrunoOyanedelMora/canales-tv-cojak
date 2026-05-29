@@ -3,96 +3,66 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Multiview Premium | Canales Chilenos</title>
+    <title>Multiview Clean 4X</title>
     <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
     <style>
-        body {
+        html, body {
             margin: 0;
-            padding: 10px;
-            background-color: #111;
-            font-family: 'Brave Sans', Arial, sans-serif;
-            color: white;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            background-color: #000;
+            overflow: hidden;
             box-sizing: border-box;
-            height: 100vh;
-            display: flex;
-            flex-direction: column;
         }
-        h2 {
-            margin: 0 0 10px 0;
-            font-size: 18px;
-            text-align: center;
-            color: #ff6600;
-        }
-        /* Cuadrícula limpia de 4 canales únicamente (2x2) */
+        /* Cuadrícula pura de 2x2 sin márgenes ni textos */
         .grid-container {
             display: grid;
             grid-template-columns: repeat(2, 1fr);
             grid-template-rows: repeat(2, 1fr);
-            gap: 12px;
-            flex-grow: 1;
+            width: 100%;
+            height: 100%;
+            gap: 2px; /* Pequeña separación negra entre pantallas, cambia a 0px si lo quieres 100% pegado */
         }
         .canal-box {
             background-color: #000;
-            border: 2px solid #333;
-            border-radius: 8px;
-            position: relative;
-            overflow: hidden;
-            display: flex;
-            flex-direction: column;
-        }
-        .canal-box video {
             width: 100%;
             height: 100%;
-            object-fit: cover;
-            background-color: #000;
+            overflow: hidden;
         }
-        .canal-title {
-            position: absolute;
-            top: 5px;
-            left: 5px;
-            background: rgba(0, 0, 0, 0.7);
-            padding: 2px 8px;
-            border-radius: 4px;
-            font-size: 12px;
-            z-index: 10;
+        video {
+            width: 100%;
+            height: 100%;
+            object-fit: contain; /* Mantiene la proporción 16:9 original de la TV sin deformar */
+            background-color: #000;
         }
     </style>
 </head>
 <body>
 
-    <h2>Multiview Premium | Canales Chilenos</h2>
-
     <div class="grid-container">
         <div class="canal-box">
-            <span class="canal-title">TVN</span>
-            <video id="video-tvn" controls autoplay muted playsinline></video>
+            <video id="video-24h" controls autoplay muted playsinline></video>
         </div>
         <div class="canal-box">
-            <span class="canal-title">T13</span>
             <video id="video-t13" controls autoplay muted playsinline></video>
         </div>
         <div class="canal-box">
-            <span class="canal-title">CHV</span>
             <video id="video-chv" controls autoplay muted playsinline></video>
         </div>
         <div class="canal-box">
-            <span class="canal-title">MEGA</span>
             <video id="video-mega" controls autoplay muted playsinline></video>
         </div>
     </div>
 
     <script>
-        // Fuentes directas optimizadas para HLS
+        // Configuración de señales directas (TVN reemplazado por 24 Horas)
         const streams = {
-            'video-tvn': 'https://unlimited10-cl.dps.live/tvn/tvn.smil/playlist.m3u8', 
+            'video-24h': 'https://mdstrm.com/live-stream-playlist/689ba606ecfe7915e1f8f741.m3u8',
             'video-t13': 'https://redirector.rudo.video/hls-video/10b92cafdf3646cbc1e727f3dc76863621a327fd/t13/t13.smil/playlist.m3u8',
             'video-chv': 'https://redirector.rudo.video/hls-video/10b92cafdf3646cbc1e727f3dc76863621a327fd/chv/chv.smil/playlist.m3u8',
             'video-mega': 'https://unlimited1-cl-isp.dps.live/mega/mega.smil/playlist.m3u8'
         };
-
-        // Nota por si necesitas cambiar la señal de TVN:
-        // Si por restricciones externas prefieres usar TV Chile (Señal Internacional estable):
-        // 'https://mdstrm.com/live-stream-playlist/533adcc949386ce765657d7c.m3u8'
 
         function iniciarStreaming(idVideo, url) {
             const video = document.getElementById(idVideo);
@@ -107,23 +77,18 @@
                 hls.loadSource(url);
                 hls.attachMedia(video);
                 hls.on(Hls.Events.MANIFEST_PARSED, function() {
-                    video.play().catch(e => console.log("Bloqueo de reproducción automática:", e));
+                    video.play().catch(e => console.log("Reproducción automática pausada por navegador:", e));
                 });
 
-                // Manejo y recuperación automática de errores de buffer o red
+                // Auto-recuperación silenciosa en caso de micro-caídas de señal
                 hls.on(Hls.Events.ERROR, function (event, data) {
                     if (data.fatal) {
                         switch (data.type) {
                             case Hls.ErrorTypes.NETWORK_ERROR:
-                                console.log("Error de red en " + idVideo + ", reintentando...");
                                 hls.startLoad();
                                 break;
                             case Hls.ErrorTypes.MEDIA_ERROR:
-                                console.log("Error de media en " + idVideo + ", recuperando...");
                                 hls.recoverMediaError();
-                                break;
-                            default:
-                                console.log("Error irrecuperable en " + idVideo);
                                 break;
                         }
                     }
@@ -131,7 +96,7 @@
             } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
                 video.src = url;
                 video.addEventListener('loadedmetadata', function() {
-                    video.play().catch(e => console.log("Bloqueo de reproducción automática:", e));
+                    video.play().catch(e => console.log("Reproducción automática pausada por navegador:", e));
                 });
             }
         }
