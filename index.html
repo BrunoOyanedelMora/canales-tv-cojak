@@ -3,8 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Multiview Zero-Latency</title>
-    <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+    <title>Multiview YouTube Chile</title>
     <style>
         html, body {
             margin: 0;
@@ -30,10 +29,11 @@
             height: 100%;
             overflow: hidden;
         }
-        video {
+        /* Ajustamos las propiedades para el iframe en lugar de video */
+        iframe {
             width: 100%;
             height: 100%;
-            object-fit: contain;
+            border: none;
             background-color: #000;
         }
     </style>
@@ -41,94 +41,23 @@
 <body>
 
     <div class="grid-container">
-        <div class="canal-box"><video id="video-24h" controls autoplay muted playsinline></video></div>
-        <div class="canal-box"><video id="video-t13" controls autoplay muted playsinline></video></div>
-        <div class="canal-box"><video id="video-chv" controls autoplay muted playsinline></video></div>
-        <div class="canal-box"><video id="video-mega" controls autoplay muted playsinline></video></div>
+        <!-- 24 Horas -->
+        <div class="canal-box">
+            <iframe src="https://www.youtube.com/embed/Ue4ECy4cubg?autoplay=1&mute=1&live=1" allow="autoplay; encrypted-media" allowfullscreen></iframe>
+        </div>
+        <!-- T13 -->
+        <div class="canal-box">
+            <iframe src="https://www.youtube.com/embed/V1mn3KjPBqc?autoplay=1&mute=1&live=1" allow="autoplay; encrypted-media" allowfullscreen></iframe>
+        </div>
+        <!-- CHV -->
+        <div class="canal-box">
+            <iframe src="https://www.youtube.com/embed/IEVv3T4ujj0?autoplay=1&mute=1&live=1" allow="autoplay; encrypted-media" allowfullscreen></iframe>
+        </div>
+        <!-- MEGA -->
+        <div class="canal-box">
+            <iframe src="https://www.youtube.com/embed/Mnyz9UWHx2c?autoplay=1&mute=1&live=1" allow="autoplay; encrypted-media" allowfullscreen></iframe>
+        </div>
     </div>
 
-    <script>
-        const streams = {
-            'video-24h': 'https://mdstrm.com/live-stream-playlist/689ba606ecfe7915e1f8f741.m3u8',
-            'video-t13': 'https://redirector.rudo.video/hls-video/10b92cafdf3646cbc1e727f3dc76863621a327fd/t13/t13.smil/playlist.m3u8',
-            'video-chv': 'https://redirector.rudo.video/hls-video/10b92cafdf3646cbc1e727f3dc76863621a327fd/chv/chv.smil/playlist.m3u8',
-            'video-mega': 'https://unlimited1-cl-isp.dps.live/mega/mega.smil/playlist.m3u8'
-        };
-
-        // Forzar el salto inmediato al extremo derecho del buffer (tiempo real actual)
-        function empujarAlVivoReal(video) {
-            if (video.seekable && video.seekable.length > 0) {
-                const extremoVivo = video.seekable.end(video.seekable.length - 1);
-                // Si detecta un desfase mayor a 4 segundos, salta al frente
-                if (extremoVivo - video.currentTime > 4) {
-                    video.currentTime = extremoVivo - 1;
-                }
-            }
-        }
-
-        function iniciarStreaming(idVideo, url) {
-            const video = document.getElementById(idVideo);
-            if (!video) return;
-
-            if (Hls.isSupported()) {
-                const hls = new Hls({
-                    enableWorker: true,
-                    lowLatencyMode: true,
-                    backBufferLength: 0,
-                    maxMaxBufferLength: 4,
-                    liveSyncDuration: 0,
-                    liveMaxDistanceDuration: 2
-                });
-
-                hls.loadSource(url);
-                hls.attachMedia(video);
-                
-                hls.on(Hls.Events.MANIFEST_PARSED, function() {
-                    video.play().catch(e => console.log("Auto-play prevenido:", e));
-                });
-
-                // Sincronización proactiva cada vez que ingresa un fragmento nuevo de video
-                hls.on(Hls.Events.FRAG_CHANGED, function() {
-                    empujarAlVivoReal(video);
-                });
-
-                // Bucle intensivo de corrección durante los primeros 20 segundos de carga
-                let sincronizaciones = 0;
-                const loopSincro = setInterval(() => {
-                    empujarAlVivoReal(video);
-                    sincronizaciones++;
-                    if (sincronizaciones > 20) clearInterval(loopSincro);
-                }, 1000);
-
-                hls.on(Hls.Events.ERROR, function (event, data) {
-                    if (data.fatal) {
-                        switch (data.type) {
-                            case Hls.ErrorTypes.NETWORK_ERROR:
-                                hls.startLoad();
-                                break;
-                            case Hls.ErrorTypes.MEDIA_ERROR:
-                                hls.recoverMediaError();
-                                break;
-                        }
-                    }
-                });
-            } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
-                // Soporte nativo de Apple (Safari / iOS)
-                video.src = url;
-                video.addEventListener('loadedmetadata', function() {
-                    if (video.seekable.length > 0) {
-                        video.currentTime = video.seekable.end(video.seekable.length - 1) - 1;
-                    }
-                    video.play().catch(e => console.log(e));
-                });
-            }
-        }
-
-        window.addEventListener('DOMContentLoaded', () => {
-            for (const [id, url] of Object.entries(streams)) {
-                iniciarStreaming(id, url);
-            }
-        });
-    </script>
 </body>
 </html>
